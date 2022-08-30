@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astro", "Astro\Astro.csproj", "{153EF193-07D6-4685-B154-5B973ED5C9B5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AstroCLI", "AstroCLI\AstroCLI.csproj", "{0240CD0F-4C29-434A-B23F-6699DBAF0AF3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{153EF193-07D6-4685-B154-5B973ED5C9B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{153EF193-07D6-4685-B154-5B973ED5C9B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{153EF193-07D6-4685-B154-5B973ED5C9B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0240CD0F-4C29-434A-B23F-6699DBAF0AF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0240CD0F-4C29-434A-B23F-6699DBAF0AF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0240CD0F-4C29-434A-B23F-6699DBAF0AF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0240CD0F-4C29-434A-B23F-6699DBAF0AF3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
