@@ -1,4 +1,4 @@
-﻿using AstroLang.Analysis;
+﻿using AstroLang.Analysis.Parsing;
 using AstroLang.Analysis.Text;
 using AstroLang.Diagnostics;
 
@@ -8,20 +8,14 @@ public class Astro
 {
 	public void Run(string text)
 	{
-		var diagnosticList = new DiagnosticList();
-		
 		var source = new SourceText(text);
-		var tokens = Scanner.Scan(source, diagnosticList);
+		var diagnosticList = new DiagnosticList();
 
+		var syntaxTree = Parser.Parse(source, diagnosticList);
+		syntaxTree?.Print(Console.Out, source);
+		
 		if (diagnosticList.AnyErrors())
-		{
 			foreach (var diagnostic in diagnosticList.Diagnostics)
 				diagnostic.WriteMessage(Console.Out, source);
-			
-			return;
-		}
-		
-		foreach (var token in tokens)
-			Console.WriteLine($"{token}: '{source.GetLexeme(token.Span)}'");
 	}
 }

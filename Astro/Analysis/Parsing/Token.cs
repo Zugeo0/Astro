@@ -1,6 +1,6 @@
 ﻿using AstroLang.Analysis.Text;
 
-namespace AstroLang.Analysis;
+namespace AstroLang.Analysis.Parsing;
 
 public class Token
 {
@@ -12,6 +12,6 @@ public class Token
 		Type = type;
 		Span = span;
 	}
-
+	
 	public override string ToString() => $"Token [{Type}]";
 }
