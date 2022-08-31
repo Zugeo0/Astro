@@ -2,12 +2,12 @@
 
 public class TextSpan
 {
-	public int Index { get; }
+	public int Start { get; }
 	public int Length { get; }
 
-	public TextSpan(int index, int length)
+	public TextSpan(int start, int length)
 	{
-		Index = index;
+		Start = start;
 		Length = length;
 	}
 }

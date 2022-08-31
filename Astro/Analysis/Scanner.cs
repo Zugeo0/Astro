@@ -1,4 +1,5 @@
 ﻿using AstroLang.Analysis.Text;
+using AstroLang.Diagnostics;
 
 namespace AstroLang.Analysis;
 
@@ -7,18 +8,20 @@ public class Scanner
 	private int _startIndex;
 	private int _currentIndex;
 
+	private DiagnosticList _diagnostics;
 	private TextSpan Span => new TextSpan(_startIndex, _currentIndex - _startIndex);
 	
 	private readonly SourceText _sourceText;
 
-	private Scanner(SourceText sourceText)
+	private Scanner(SourceText sourceText, DiagnosticList diagnostics)
 	{
 		_sourceText = sourceText;
+		_diagnostics = diagnostics;
 	}
 
-	public static Token[] Scan(SourceText sourceText)
+	public static Token[] Scan(SourceText sourceText, DiagnosticList diagnostics)
 	{
-		var scanner = new Scanner(sourceText);
+		var scanner = new Scanner(sourceText, diagnostics);
 		return scanner.CreateTokens();
 	}
 
@@ -69,7 +72,7 @@ public class Scanner
 		if (IsDigit(c))
 			return NewNumber();
 		
-		Console.WriteLine($"Unrecognized character '{c}'");
+		_diagnostics.Add(new Diagnostic(Span, $"Unrecognized character '{c}'"));
 		return null;
 	}
 
@@ -105,11 +108,11 @@ public class Scanner
 		if (!AtEnd())
 			return NewToken(TokenType.String);
 		
-		Console.WriteLine("Unterminated String");
+		_diagnostics.Add(new Diagnostic(Span, "Unterminated String"));
 		return null;
 	}
 
-	private TokenType MatchKeyword(string identifier)
+	private static TokenType MatchKeyword(string identifier)
 	{
 		return identifier switch
 		{
