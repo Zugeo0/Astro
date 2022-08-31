@@ -60,6 +60,10 @@ public class Scanner
 			case '>': return NewToken(Match('=') ? TokenType.GreaterEquals : TokenType.Greater);
 			case '<': return NewToken(Match('=') ? TokenType.LesserEquals : TokenType.Lesser);
 			
+			case '"':
+			case '\'':
+				return NewString(c);
+
 			case ' ':
 			case '\t':
 			case '\r':
@@ -102,14 +106,17 @@ public class Scanner
 
 	private Token? NewString(char startingChar)
 	{
-		while (Peek() != startingChar)
+		while (!AtEnd() && Peek() != startingChar)
 			Advance();
 
-		if (!AtEnd())
-			return NewToken(TokenType.String);
-		
-		_diagnostics.Add(new Diagnostic(Span, "Unterminated String"));
-		return null;
+		if (AtEnd())
+		{
+			_diagnostics.Add(new Diagnostic(Span, "Unterminated string"));
+			return null;
+		}
+
+		Advance();
+		return NewToken(TokenType.String);
 	}
 
 	private static TokenType MatchKeyword(string identifier)
