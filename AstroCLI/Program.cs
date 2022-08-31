@@ -30,7 +30,9 @@ void LaunchREPL()
 		switch (input.Trim())
 		{
 			// 'exit' simply returns out of the function
-			case "exit": return;
+			case "exit":
+				Console.WriteLine("Exiting REPL.");
+				return;
 		}
 
 		// Run the user's input
