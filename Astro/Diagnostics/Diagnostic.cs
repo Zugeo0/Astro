@@ -17,7 +17,7 @@ public class Diagnostic
 	{
 		var lineIdx = source.FindLineIndex(Span.Start);
 		var line = source.GetLine(lineIdx);
-		var column = Span.Start - line.Span.Start;
+		var column = Span.Start - line.Span.Start + Span.Length - 1;
 		writer.WriteLine($"Error: {Message} at [{lineIdx + 1}:{column}]");
 
 		var lineNumberText = $"{lineIdx + 1} | ";
