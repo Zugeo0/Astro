@@ -7,7 +7,13 @@ if (args.Length == 0)
 	return;
 }
 
-// Currently no arguments are supported, but in the future this would
+if (args.Length == 1)
+{
+	RunFile(args[0]);
+	return;
+}
+
+// Currently only one argument is supported, but in the future this would
 // be where you would specify file locations, compiler config, etc.
 PrintColored(ConsoleColor.Red, "Arguments not supported yet\n");
 
@@ -38,6 +44,13 @@ void LaunchREPL()
 		// Run the user's input
 		astro.Run(input);
 	}
+}
+
+void RunFile(string path)
+{
+	string file = File.ReadAllText(path);
+	var astro = new Astro();
+	astro.Run(file);
 }
 
 void PrintColored(ConsoleColor color, string message)
