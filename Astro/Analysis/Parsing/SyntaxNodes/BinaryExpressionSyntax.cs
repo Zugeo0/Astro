@@ -1,4 +1,5 @@
 ﻿using AstroLang.Analysis.Text;
+using AstroLang.Runtime;
 
 namespace AstroLang.Analysis.Parsing.SyntaxNodes;
 
@@ -10,10 +11,10 @@ public class BinaryExpressionSyntax : ExpressionSyntax
 	
 	public override TextSpan Span { get; }
 	
-	public BinaryExpressionSyntax(ExpressionSyntax left, Token @operator, ExpressionSyntax right)
+	public BinaryExpressionSyntax(ExpressionSyntax left, Token op, ExpressionSyntax right)
 	{
 		Left = left;
-		Operator = @operator;
+		Operator = op;
 		Right = right;
 		Span = left.Span.SpanTo(right.Span);
 	}

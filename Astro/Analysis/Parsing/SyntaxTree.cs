@@ -6,15 +6,15 @@ namespace AstroLang.Analysis.Parsing;
 
 public class SyntaxTree
 {
-	public SyntaxNode Root { get; }
+	public ProgramSyntax Root { get; }
 	
-	public SyntaxTree(SyntaxNode root)
+	public SyntaxTree(ProgramSyntax root)
 	{
 		Root = root;
 	}
 
-	public void Print(TextWriter writer, SourceText text) => writer.Write(PrintNode(Root, text, 0));
-	private string PrintNode(SyntaxNode node, SourceText text, int indent)
+	public void Print(TextWriter writer) => writer.Write(PrintNode(Root, 0));
+	private string PrintNode(SyntaxNode node, int indent)
 	{
 		switch (node)
 		{
@@ -24,7 +24,7 @@ public class SyntaxTree
 				var label = PrintIndented(indent, "Program:");
 				var builder = new StringBuilder();
 				foreach (var statement in e.Statements)
-					builder.Append($"{PrintNode(statement, text, indent + 1)}\n");
+					builder.Append($"{PrintNode(statement, indent + 1)}\n");
 				return $"{label}\n{builder}";
 			}
 			
@@ -32,28 +32,28 @@ public class SyntaxTree
 			case ExpressionStatementSyntax e:
 			{
 				var label = PrintIndented(indent, "Expression Statement:");
-				var expr = PrintNode(e.Expression, text, indent + 1);
+				var expr = PrintNode(e.Expression, indent + 1);
 				return $"{label}\n{expr}";
 			}
 			
 			// Expressions
 			case LiteralExpressionSyntax e:
 			{
-				return PrintIndented(indent, $"Literal: {text.GetLexeme(e.Literal.Span)}");
+				return PrintIndented(indent, $"Literal: {e.Literal}");
 			}
 			case UnaryExpressionSyntax e:
 			{
 				var label = PrintIndented(indent, "Unary Expression:");
 				var op = PrintIndented(indent + 1, $"{e.Operator}");
-				var expr = PrintNode(e.Right, text, indent + 1);
+				var expr = PrintNode(e.Right, indent + 1);
 				return $"{label}\n{op}\n{expr}";
 			}
 			case BinaryExpressionSyntax e:
 			{
 				var label = PrintIndented(indent, "Binary Expression:");
-				var left = PrintNode(e.Left, text, indent + 1);
+				var left = PrintNode(e.Left, indent + 1);
 				var op = PrintIndented(indent + 1, $"{e.Operator}");
-				var right = PrintNode(e.Right, text, indent + 1);
+				var right = PrintNode(e.Right, indent + 1);
 				return $"{label}\n{left}\n{op}\n{right}";
 			}
 		}

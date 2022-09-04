@@ -10,7 +10,7 @@ public class Parser
 	private readonly DiagnosticList _diagnostics;
 	private int _index;
 
-	private TextSpan Span => Peek().Span;
+	private TextSpan TokenSpan => Peek().Span;
 	
 	private class ParseException : Exception {}
 	
@@ -25,7 +25,7 @@ public class Parser
 		var tokens = Scanner.Scan(source, diagnostics);
 		if (diagnostics.AnyErrors())
 			return null;
-
+		
 		var parser = new Parser(tokens, diagnostics);
 		
 		try
@@ -91,15 +91,13 @@ public class Parser
 
 	private ExpressionSyntax ParsePrimaryExpression()
 	{
+		var span = TokenSpan;
 		var token = Peek();
-
-		if (token.Type == TokenType.Number)
-		{
-			Advance();
-			return new LiteralExpressionSyntax(token);
-		}
 		
-		_diagnostics.Add(new Diagnostic(Span, $"Expected a literal"));
+		if (Match(TokenType.Number, TokenType.String, TokenType.True, TokenType.False, TokenType.Null))
+			return new LiteralExpressionSyntax(token, span);
+		
+		_diagnostics.Add(new Diagnostic(TokenSpan, $"Expected a literal"));
 		throw new ParseException();
 	}
 
@@ -130,16 +128,16 @@ public class Parser
 		}
 	}
 
-	private Token Consume(TokenType type, string expect)
+	private void Consume(TokenType type, string expect)
 	{
 		var token = Peek();
 		if (token.Type == type)
 		{
 			Advance();
-			return token;
+			return;
 		}
 		
-		_diagnostics.Add(new Diagnostic(Span, $"Expected {expect}"));
+		_diagnostics.Add(new Diagnostic(TokenSpan, $"Expected {expect}"));
 		throw new ParseException();
 	}
 	

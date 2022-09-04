@@ -36,7 +36,7 @@ public class Scanner
 				tokens.Add(token);
 		}
 		
-		tokens.Add(new Token(TokenType.EndOfFile, Span));
+		tokens.Add(new Token(TokenType.EndOfFile, Span, "\0"));
 
 		return tokens.ToArray();
 	}
@@ -133,6 +133,7 @@ public class Scanner
 		{
 			"true"  => TokenType.True,
 			"false" => TokenType.False,
+			"null"  => TokenType.Null,
 			
 			_       => TokenType.Identifier
 		};
@@ -147,7 +148,7 @@ public class Scanner
 		return true;
 	}
 	
-	private Token NewToken(TokenType type) => new Token(type, Span);
+	private Token NewToken(TokenType type) => new Token(type, Span, _sourceText.GetLexeme(Span));
 
 	private static bool IsDigit(char c) => c is >= '0' and <= '9';
 	private static bool IsAlpha(char c) => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '_';

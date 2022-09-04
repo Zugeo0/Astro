@@ -33,6 +33,7 @@ public enum TokenType
 	// Keywords
 	True,
 	False,
+	Null,
 	
 	// Special
 	EndOfFile,
