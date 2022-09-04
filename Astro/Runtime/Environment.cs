@@ -17,12 +17,14 @@ public class Environment
 		BeginScope();
 	}
 
-	public void DeclareVariable(string name, Object value)
+	public bool LocalDeclaredInCurrentScope(string name) => _scopes.Peek().HasLocal(name);
+	
+	public void DeclareLocal(string name, Object value)
 	{
 		_scopes.Peek().DeclareLocal(name, value);
 	}
 
-	public bool AssignVariable(string name, Object value)
+	public bool AssignLocal(string name, Object value)
 	{
 		foreach (var scope in _scopes)
 		{

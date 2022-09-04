@@ -53,8 +53,14 @@ public class Interpreter
 
 	private void ExecuteVariableDeclaration(VariableDeclarationSyntax declaration)
 	{
+		if (_environment.LocalDeclaredInCurrentScope(declaration.Name.Lexeme))
+		{
+			_diagnostics.Add(new Diagnostic(declaration.Name.Span, $"Variable '{declaration.Name.Lexeme}' has already been declared"));
+			throw new InterpretException();
+		}
+		
 		var value = declaration.Initializer is not null ? Evaluate(declaration.Initializer) : new Null();
-		_environment.DeclareVariable(declaration.Name.Lexeme, value);
+		_environment.DeclareLocal(declaration.Name.Lexeme, value);
 	}
 
 	private void ExecuteIfStatement(IfStatementSyntax ifStatementSyntax)
@@ -157,7 +163,7 @@ public class Interpreter
 
 	private DataTypes.Object EvaluateAssignExpression(Token name, DataTypes.Object value)
 	{
-		if (_environment.AssignVariable(name.Lexeme, value))
+		if (_environment.AssignLocal(name.Lexeme, value))
 			return value;
 		
 		_diagnostics.Add(new Diagnostic(name.Span, $"Local variable '{name.Lexeme}' is not defined"));
