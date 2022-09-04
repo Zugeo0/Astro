@@ -28,7 +28,7 @@ public class SourceText
 			var start = line.Span.Start;
 			var end = line.Span.Start + line.Span.Length;
 			
-			if (index >= start && index < end)
+			if (index >= start && index <= end)
 				return idx;
 			
 			if (index < start)
@@ -66,6 +66,7 @@ public class SourceText
 			lineBuilder.Clear();
 			lines.Add(textLine);
 			index += lineLength;
+			lineLength = 0;
 		}
 
 		if (lineBuilder.Length != 0)
