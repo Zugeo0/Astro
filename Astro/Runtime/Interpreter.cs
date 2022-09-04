@@ -42,6 +42,9 @@ public class Interpreter
 			case VariableDeclarationSyntax s:
 				ExecuteVariableDeclaration(s);
 				break;
+			case BlockStatementSyntax s:
+				ExecuteBlockStatement(s);
+				break;
 		}
 	}
 
@@ -51,6 +54,14 @@ public class Interpreter
 		_environment.DeclareVariable(declaration.Name.Lexeme, value);
 	}
 
+	private void ExecuteBlockStatement(BlockStatementSyntax blockStatement)
+	{
+		_environment.BeginScope();
+		foreach (var statement in blockStatement.Statements)
+			Execute(statement);
+		_environment.EndScope();
+	}
+	
 	private DataTypes.Object Evaluate(ExpressionSyntax expression)
 	{
 		switch (expression)

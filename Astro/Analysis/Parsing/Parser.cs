@@ -71,7 +71,21 @@ public class Parser
 	
 	private StatementSyntax ParseStatement()
 	{
+		if (Peek().Type == TokenType.LeftBrace)
+			return ParseBlockStatement();
+		
 		return ParseExpressionStatement();
+	}
+
+	private BlockStatementSyntax ParseBlockStatement()
+	{
+		var leftBrace = Advance();
+		var statements = new List<StatementSyntax>();
+		while (!AtEnd() && Peek().Type != TokenType.RightBrace)
+			statements.Add(ParseDeclaration());
+		
+		Consume(TokenType.RightBrace, "'}'");
+		return new BlockStatementSyntax(leftBrace, statements);
 	}
 
 	private StatementSyntax ParseExpressionStatement()
