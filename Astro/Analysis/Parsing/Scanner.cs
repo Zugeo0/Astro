@@ -136,6 +136,8 @@ public class Scanner
 			"false" => TokenType.False,
 			"null"  => TokenType.Null,
 			"var"   => TokenType.Var,
+			"if"    => TokenType.If,
+			"else"  => TokenType.Else,
 			
 			_       => TokenType.Identifier
 		};

@@ -56,7 +56,7 @@ public class Parser
 		return ParseStatement();
 	}
 
-	private VariableDeclarationSyntax ParseVariableDeclaration()
+	private StatementSyntax ParseVariableDeclaration()
 	{
 		var varKeyword = Advance();
 		var name = Advance();
@@ -71,13 +71,33 @@ public class Parser
 	
 	private StatementSyntax ParseStatement()
 	{
-		if (Peek().Type == TokenType.LeftBrace)
-			return ParseBlockStatement();
+		switch (Peek().Type)
+		{
+			case TokenType.LeftBrace:
+				return ParseBlockStatement();
+			case TokenType.If:
+				return ParseIfStatement();
+		}
 		
 		return ParseExpressionStatement();
 	}
 
-	private BlockStatementSyntax ParseBlockStatement()
+	private StatementSyntax ParseIfStatement()
+	{
+		var ifToken = Advance();
+		Consume(TokenType.LeftParen, "'('");
+		var condition = ParseBinaryExpression();
+		Consume(TokenType.RightParen, "')'");
+
+		var thenBranch = ParseStatement();
+		var elseBranch = Match(TokenType.Else)
+			? ParseDeclaration()
+			: null;
+		var span = ifToken.Span.SpanTo(elseBranch?.Span ?? thenBranch.Span);
+		return new IfStatementSyntax(span, condition, thenBranch, elseBranch);
+	}
+
+	private StatementSyntax ParseBlockStatement()
 	{
 		var leftBrace = Advance();
 		var statements = new List<StatementSyntax>();

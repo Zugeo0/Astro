@@ -45,6 +45,9 @@ public class Interpreter
 			case BlockStatementSyntax s:
 				ExecuteBlockStatement(s);
 				break;
+			case IfStatementSyntax s:
+				ExecuteIfStatement(s);
+				break;
 		}
 	}
 
@@ -52,6 +55,15 @@ public class Interpreter
 	{
 		var value = declaration.Initializer is not null ? Evaluate(declaration.Initializer) : new Null();
 		_environment.DeclareVariable(declaration.Name.Lexeme, value);
+	}
+
+	private void ExecuteIfStatement(IfStatementSyntax ifStatementSyntax)
+	{
+		var result = Evaluate(ifStatementSyntax.Condition);
+		if (result.IsTruthful())
+			Execute(ifStatementSyntax.ThenBranch);
+		else if (ifStatementSyntax.ElseBranch is not null)
+			Execute(ifStatementSyntax.ElseBranch);
 	}
 
 	private void ExecuteBlockStatement(BlockStatementSyntax blockStatement)
@@ -103,6 +115,21 @@ public class Interpreter
 			case TokenType.GreaterEquals when left is Number l && right is Number r:
 				return l >= r;
 
+			case TokenType.DoubleEquals when left is Number l && right is Number r:
+				return l == r;
+			case TokenType.BangEquals when left is Number l && right is Number r:
+				return l != r;
+			
+			case TokenType.DoubleEquals when left is Bool l && right is Bool r:
+				return l == r;
+			case TokenType.BangEquals when left is Bool l && right is Bool r:
+				return l != r;
+			
+			case TokenType.DoubleEquals when left is DataTypes.String l && right is DataTypes.String r:
+				return l == r;
+			case TokenType.BangEquals when left is DataTypes.String l && right is DataTypes.String r:
+				return l != r;
+			
 			case TokenType.DoubleEquals:
 				return left == right;
 			case TokenType.BangEquals:

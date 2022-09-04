@@ -35,6 +35,8 @@ public enum TokenType
 	False,
 	Null,
 	Var,
+	If,
+	Else,
 	
 	// Special
 	EndOfFile,

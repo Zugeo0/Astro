@@ -2,17 +2,17 @@
 
 public class Object
 {
-	private bool IsTruthful()
+	public bool IsTruthful()
 	{
 		return this switch
 		{
 			Null => false,
-			Bool b => !b.Value,
+			Bool b => b.Value,
 			_ => true
 		};
 	}
 
-	private Bool IsEqual(Object other)
+	public Bool IsEqual(Object other)
 	{
 		if (this is Null && other is Null)
 			return new Bool(true);

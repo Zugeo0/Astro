@@ -8,6 +8,8 @@ public class String : Object
 	{
 		Value = value;
 	}
+	
+	public override bool Equals(object? obj) => obj is DataTypes.String v && Value == v.Value;
 
 	public override string ToString() => Value;
 }

@@ -8,6 +8,7 @@ public class Bool : Object
 	{
 		Value = value;
 	}
-	
+
 	public override string ToString() => $"{Value}";
+	public override bool Equals(object? obj) => obj is Bool v && Value == v.Value;
 }
