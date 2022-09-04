@@ -138,6 +138,8 @@ public class Scanner
 			"var"   => TokenType.Var,
 			"if"    => TokenType.If,
 			"else"  => TokenType.Else,
+			"and"   => TokenType.And,
+			"or"    => TokenType.Or,
 			
 			_       => TokenType.Identifier
 		};

@@ -85,23 +85,43 @@ public class Interpreter
 		switch (expression)
 		{
 			case LiteralExpressionSyntax e:
-				return EvaluateLiteral(e.Literal);
+				return EvaluateLiteral(e);
 			case AssignExpressionSyntax e:
-				return EvaluateAssignExpression(e.Name, Evaluate(e.Value));
+				return EvaluateAssignExpression(e);
 			case VariableExpressionSyntax e:
-				return EvaluateVariable(e.Name);
+				return EvaluateVariable(e);
 			case UnaryExpressionSyntax e:
-				return EvaluateUnary(e.Operator, Evaluate(e.Right));
+				return EvaluateUnary(e);
 			case BinaryExpressionSyntax e:
-				return EvaluateBinary(e.Operator, Evaluate(e.Left), Evaluate(e.Right));
+				return EvaluateBinary(e);
 		}
 
 		throw new Exception("Invalid Expression");
 	}
 
-	private DataTypes.Object EvaluateBinary(Token op, DataTypes.Object left, DataTypes.Object right)
+	private DataTypes.Object EvaluateBinary(BinaryExpressionSyntax binaryExpression)
 	{
-		switch (op.Type)
+		var left = Evaluate(binaryExpression.Left);
+		switch (binaryExpression.Operator.Type)
+		{
+			case TokenType.And:
+			{
+				if (!left.IsTruthful())
+					return left;
+				
+				return Evaluate(binaryExpression.Right);
+			}
+			case TokenType.Or:
+			{
+				if (left.IsTruthful())
+					return left;
+				
+				return Evaluate(binaryExpression.Right);
+			}
+		}
+		
+		var right = Evaluate(binaryExpression.Right);
+		switch (binaryExpression.Operator.Type)
 		{
 			case TokenType.Plus when left is Number l && right is Number r:
 				return l + r;
@@ -140,57 +160,63 @@ public class Interpreter
 				return left == right;
 			case TokenType.BangEquals:
 				return left != right;
-			
+
 			default:
-				_diagnostics.Add(new Diagnostic(op.Span, $"Invalid binary operation '{op.Lexeme}' for types {left} and {right}"));
+				_diagnostics.Add(new Diagnostic(binaryExpression.Operator.Span, $"Invalid binary operation '{binaryExpression.Operator.Lexeme}' for types {left} and {right}"));
 				throw new InterpretException();
 		}
 	}
 
-	private DataTypes.Object EvaluateUnary(Token op, DataTypes.Object value)
+	private DataTypes.Object EvaluateUnary(UnaryExpressionSyntax unaryExpression)
 	{
-		switch (op.Type)
+		var value = Evaluate(unaryExpression.Right);
+		
+		switch (unaryExpression.Operator.Type)
 		{
 			case TokenType.Bang:
 				return !value;
 			case TokenType.Minus when value is Number v:
 				return -v;
 			default:
-				_diagnostics.Add(new Diagnostic(op.Span, $"Invalid unary operation '{op.Lexeme}' for type {value}"));
+				_diagnostics.Add(new Diagnostic(unaryExpression.Operator.Span, $"Invalid unary operation '{unaryExpression.Operator.Lexeme}' for type {value}"));
 				throw new InterpretException();
 		}
 	}
 
-	private DataTypes.Object EvaluateAssignExpression(Token name, DataTypes.Object value)
+	private DataTypes.Object EvaluateAssignExpression(AssignExpressionSyntax assignExpression)
 	{
-		if (_environment.AssignLocal(name.Lexeme, value))
+		var name = assignExpression.Name.Lexeme;
+		var value = Evaluate(assignExpression.Value);
+		
+		if (_environment.AssignLocal(name, value))
 			return value;
 		
-		_diagnostics.Add(new Diagnostic(name.Span, $"Local variable '{name.Lexeme}' is not defined"));
+		_diagnostics.Add(new Diagnostic(assignExpression.Name.Span, $"Local variable '{name}' is not defined"));
 		throw new InterpretException();
 	}
 
-	private static DataTypes.Object EvaluateLiteral(Token literal)
+	private static DataTypes.Object EvaluateLiteral(LiteralExpressionSyntax literal)
 	{
-		return literal.Type switch
+		var lexeme = literal.Literal.Lexeme;
+		return literal.Literal.Type switch
 		{
-			TokenType.Number => new Number(literal.Lexeme),
+			TokenType.Number => new Number(lexeme),
 			TokenType.True => new Bool(true),
 			TokenType.False => new Bool(false),
-			TokenType.String => new DataTypes.String(literal.Lexeme.Substring(1, literal.Lexeme.Length - 2)),
+			TokenType.String => new DataTypes.String(lexeme.Substring(1, lexeme.Length - 2)),
 			TokenType.Null => new Null(),
 			
 			_ => throw new Exception("Invalid literal"),
 		};
 	}
 
-	private DataTypes.Object EvaluateVariable(Token name)
+	private DataTypes.Object EvaluateVariable(VariableExpressionSyntax variableExpression)
 	{
-		var variable = _environment.FindVariable(name.Lexeme);
+		var variable = _environment.FindVariable(variableExpression.Name.Lexeme);
 		if (variable is not null)
 			return variable;
 		
-		_diagnostics.Add(new Diagnostic(name.Span, $"Variable '{name.Lexeme}' is not defined"));
+		_diagnostics.Add(new Diagnostic(variableExpression.Name.Span, $"Variable '{variableExpression.Name.Lexeme}' is not defined"));
 		throw new InterpretException();
 	}
 }

@@ -206,6 +206,12 @@ public class Parser
 			case TokenType.BangEquals:
 				return 4;
 			
+			case TokenType.And:
+				return 5;
+			
+			case TokenType.Or:
+				return 6;
+			
 			default: return 0;
 		}
 	}
