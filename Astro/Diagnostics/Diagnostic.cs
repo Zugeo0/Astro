@@ -21,7 +21,7 @@ public class Diagnostic
 		writer.WriteLine($"Error: {Message} at [{lineIdx + 1}:{column}]");
 
 		var lineNumberText = $"{lineIdx + 1} | ";
-		writer.WriteLine($"{lineNumberText}{line.Line}");
+		writer.WriteLine($"{lineNumberText}{line.Line.Replace("\n", "")}");
 
 		var arrowOffset = new string(' ', lineNumberText.Length + column);
 		var arrows = new string('^', Span.Length);

@@ -225,7 +225,8 @@ public class Parser
 			return token;
 		}
 
-		var span = new TextSpan(TokenSpan.Start + TokenSpan.Length, 1);
+		var prev = PreviousOrFirst();
+		var span = new TextSpan(prev.Span.Start + prev.Span.Length, 1);
 		_diagnostics.Add(new Diagnostic(span, $"Expected {expect}"));
 		throw new ParseException();
 	}
@@ -242,5 +243,6 @@ public class Parser
 
 	private Token Advance() => _tokens[_index++];
 	private Token Peek() => _tokens[_index];
+	private Token PreviousOrFirst() => _index > 0 ? _tokens[_index - 1] : _tokens[_index];
 	private bool AtEnd() => _tokens[_index].Type == TokenType.EndOfFile;
 }
