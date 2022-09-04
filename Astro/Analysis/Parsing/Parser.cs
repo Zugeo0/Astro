@@ -145,6 +145,13 @@ public class Parser
 	{
 		var span = TokenSpan;
 		var token = Peek();
+
+		if (Match(TokenType.LeftParen))
+		{
+			var expr = ParseBinaryExpression();
+			Consume(TokenType.RightParen, "')'");
+			return expr;
+		}
 		
 		if (Match(TokenType.Number, TokenType.String, TokenType.True, TokenType.False, TokenType.Null))
 			return new LiteralExpressionSyntax(token, span);
