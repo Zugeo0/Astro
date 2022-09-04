@@ -140,6 +140,8 @@ public class Scanner
 			"else"  => TokenType.Else,
 			"and"   => TokenType.And,
 			"or"    => TokenType.Or,
+			"while" => TokenType.While,
+			"for"   => TokenType.For,
 			
 			_       => TokenType.Identifier
 		};

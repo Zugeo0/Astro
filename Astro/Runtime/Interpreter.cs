@@ -48,6 +48,9 @@ public class Interpreter
 			case IfStatementSyntax s:
 				ExecuteIfStatement(s);
 				break;
+			case WhileStatementSyntax s:
+				ExecuteWhileStatement(s);
+				break;
 		}
 	}
 
@@ -63,13 +66,19 @@ public class Interpreter
 		_environment.DeclareLocal(declaration.Name.Lexeme, value);
 	}
 
-	private void ExecuteIfStatement(IfStatementSyntax ifStatementSyntax)
+	private void ExecuteWhileStatement(WhileStatementSyntax whileStatement)
 	{
-		var result = Evaluate(ifStatementSyntax.Condition);
+		while (Evaluate(whileStatement.Condition).IsTruthful())
+			Execute(whileStatement.Body);
+	}
+
+	private void ExecuteIfStatement(IfStatementSyntax ifStatement)
+	{
+		var result = Evaluate(ifStatement.Condition);
 		if (result.IsTruthful())
-			Execute(ifStatementSyntax.ThenBranch);
-		else if (ifStatementSyntax.ElseBranch is not null)
-			Execute(ifStatementSyntax.ElseBranch);
+			Execute(ifStatement.ThenBranch);
+		else if (ifStatement.ElseBranch is not null)
+			Execute(ifStatement.ElseBranch);
 	}
 
 	private void ExecuteBlockStatement(BlockStatementSyntax blockStatement)

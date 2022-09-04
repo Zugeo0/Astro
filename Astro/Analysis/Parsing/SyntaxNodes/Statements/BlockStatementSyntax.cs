@@ -8,9 +8,9 @@ public class BlockStatementSyntax : StatementSyntax
 	
 	public List<StatementSyntax> Statements { get; }
 
-	public BlockStatementSyntax(Token leftBrace, List<StatementSyntax> statements, Token rightBrace)
+	public BlockStatementSyntax(TextSpan span, List<StatementSyntax> statements)
 	{
-		Span = leftBrace.Span.SpanTo(rightBrace.Span);
+		Span = span;
 		Statements = statements;
 	}
 }

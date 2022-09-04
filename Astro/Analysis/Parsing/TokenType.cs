@@ -39,6 +39,8 @@ public enum TokenType
 	Else,
 	And,
 	Or,
+	While,
+	For,
 	
 	// Special
 	EndOfFile,

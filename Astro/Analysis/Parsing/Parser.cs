@@ -65,7 +65,7 @@ public class Parser
 			? varKeyword.Span.SpanTo(initializer.Span)
 			: varKeyword.Span.SpanTo(name.Span);
 
-		Consume(TokenType.Semicolon, "';'");
+		Consume(TokenType.Semicolon, "';' after variable declaration");
 		return new VariableDeclarationSyntax(span, name, initializer);
 	}
 	
@@ -77,17 +77,62 @@ public class Parser
 				return ParseBlockStatement();
 			case TokenType.If:
 				return ParseIfStatement();
+			case TokenType.While:
+				return ParseWhileStatement();
+			case TokenType.For:
+				return ParseForStatement();
 		}
 		
 		return ParseExpressionStatement();
 	}
 
+	private StatementSyntax ParseForStatement()
+	{
+		var forToken = Advance();
+		
+		Consume(TokenType.LeftParen, "'(' after 'for' keyword");
+		var initializer = Match(TokenType.Semicolon) ? null : ParseDeclaration();
+		var condition = Match(TokenType.Semicolon)
+			? new LiteralExpressionSyntax(new Token(TokenType.True, TokenSpan, "true"), TokenSpan)
+			: ParseBinaryExpression();
+		Consume(TokenType.Semicolon, "';' after condition");
+		var finalizer = Peek().Type == TokenType.RightParen ? null : ParseAssignmentExpression();
+		var rightParen = Consume(TokenType.RightParen, "')' after for loop declaration");
+
+		var block = new List<StatementSyntax>();
+		if (initializer is not null)
+			block.Add(initializer);
+
+		Consume(TokenType.LeftBrace, "'{' after for loop declaration", false);
+		var body = (BlockStatementSyntax)ParseBlockStatement();
+
+		if (finalizer is not null)
+		{
+			var finalizerStatement = new ExpressionStatementSyntax(finalizer);
+			body.Statements.Add(finalizerStatement);
+		}
+
+		block.Add(new WhileStatementSyntax(condition, body));
+		return new BlockStatementSyntax(forToken.Span.SpanTo(rightParen.Span), block);
+	}
+
+	private StatementSyntax ParseWhileStatement()
+	{
+		var whileToken = Advance();
+		Consume(TokenType.LeftParen, "'(' after 'while' keyword");
+		var condition = ParseBinaryExpression();
+		Consume(TokenType.RightParen, "')' after condition");
+		
+		var body = ParseStatement();
+		return new WhileStatementSyntax(condition, body);
+	}
+	
 	private StatementSyntax ParseIfStatement()
 	{
 		var ifToken = Advance();
-		Consume(TokenType.LeftParen, "'('");
+		Consume(TokenType.LeftParen, "'(' after 'if' keyword");
 		var condition = ParseBinaryExpression();
-		Consume(TokenType.RightParen, "')'");
+		Consume(TokenType.RightParen, "')' after condition");
 
 		var thenBranch = ParseStatement();
 		var elseBranch = Match(TokenType.Else)
@@ -104,14 +149,15 @@ public class Parser
 		while (!AtEnd() && Peek().Type != TokenType.RightBrace)
 			statements.Add(ParseDeclaration());
 		
-		var rightBrace = Consume(TokenType.RightBrace, "'}'");
-		return new BlockStatementSyntax(leftBrace, statements, rightBrace);
+		var rightBrace = Consume(TokenType.RightBrace, "'}' after block");
+		var span = leftBrace.Span.SpanTo(rightBrace.Span);
+		return new BlockStatementSyntax(span, statements);
 	}
 
 	private StatementSyntax ParseExpressionStatement()
 	{
 		var expression = ParseAssignmentExpression();
-		Consume(TokenType.Semicolon, "';'");
+		Consume(TokenType.Semicolon, "';' after expression");
 		return new ExpressionStatementSyntax(expression);
 	}
 
@@ -169,7 +215,7 @@ public class Parser
 		if (Match(TokenType.LeftParen))
 		{
 			var expr = ParseBinaryExpression();
-			Consume(TokenType.RightParen, "')'");
+			Consume(TokenType.RightParen, "')' after grouping");
 			return expr;
 		}
 		
@@ -216,12 +262,13 @@ public class Parser
 		}
 	}
 
-	private Token Consume(TokenType type, string expect)
+	private Token Consume(TokenType type, string expect, bool advance = true)
 	{
 		var token = Peek();
 		if (token.Type == type)
 		{
-			Advance();
+			if (advance)
+				Advance();
 			return token;
 		}
 
