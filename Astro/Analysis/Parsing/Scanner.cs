@@ -119,7 +119,8 @@ public class Scanner
 
 		if (AtEnd())
 		{
-			_diagnostics.Add(new Diagnostic(Span, "Unterminated string"));
+			var span = new TextSpan(Span.Start + Span.Length, 1);
+			_diagnostics.Add(new Diagnostic(span, "Unterminated string"));
 			return null;
 		}
 
