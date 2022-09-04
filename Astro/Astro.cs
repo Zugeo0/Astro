@@ -7,6 +7,13 @@ namespace AstroLang;
 
 public class Astro
 {
+	private Runtime.Environment _environment;
+
+	public Astro()
+	{
+		_environment = new Runtime.Environment();
+	}
+	
 	public void Run(string text)
 	{
 		var source = new SourceText(text);
@@ -22,7 +29,7 @@ public class Astro
 		if (syntaxTree is null)
 			return;
 		
-		Interpreter.Interpret(syntaxTree, diagnosticList);
+		Interpreter.Interpret(syntaxTree, diagnosticList, _environment);
 		
 		if (diagnosticList.AnyErrors())
 			foreach (var diagnostic in diagnosticList.Diagnostics)

@@ -10,15 +10,19 @@ public class Interpreter
 	private class InterpretException : Exception {}
 	
 	private readonly DiagnosticList _diagnostics;
-
-	public Interpreter(DiagnosticList diagnostics)
+	private readonly Environment _environment;
+	
+	public Interpreter(DiagnosticList diagnostics, Environment environment)
 	{
 		_diagnostics = diagnostics;
+		_environment = environment;
 	}
 
-	public static void Interpret(SyntaxTree syntaxTree, DiagnosticList diagnostics)
+	public static void Interpret(SyntaxTree syntaxTree, DiagnosticList diagnostics, Environment? environment = null)
 	{
-		var interpreter = new Interpreter(diagnostics);
+		environment ??= new Environment();
+		
+		var interpreter = new Interpreter(diagnostics, environment);
 		try
 		{
 			foreach (var statement in syntaxTree.Root.Statements)
@@ -31,12 +35,20 @@ public class Interpreter
 	{
 		switch (statement)
 		{
-			case ExpressionStatementSyntax e:
-				var result = Evaluate(e.Expression);
+			case ExpressionStatementSyntax s:
+				var result = Evaluate(s.Expression);
 				Console.WriteLine($"{result}");
-				
+				break;
+			case VariableDeclarationSyntax s:
+				ExecuteVariableDeclaration(s);
 				break;
 		}
+	}
+
+	private void ExecuteVariableDeclaration(VariableDeclarationSyntax declaration)
+	{
+		var value = declaration.Initializer is not null ? Evaluate(declaration.Initializer) : new Null();
+		_environment.DeclareVariable(declaration.Name.Lexeme, value);
 	}
 
 	private DataTypes.Object Evaluate(ExpressionSyntax expression)
@@ -45,6 +57,10 @@ public class Interpreter
 		{
 			case LiteralExpressionSyntax e:
 				return EvaluateLiteral(e.Literal);
+			case AssignExpressionSyntax e:
+				return EvaluateAssignExpression(e.Name, Evaluate(e.Value));
+			case VariableExpressionSyntax e:
+				return EvaluateVariable(e.Name);
 			case UnaryExpressionSyntax e:
 				return EvaluateUnary(e.Operator, Evaluate(e.Right));
 			case BinaryExpressionSyntax e:
@@ -101,6 +117,15 @@ public class Interpreter
 		}
 	}
 
+	private DataTypes.Object EvaluateAssignExpression(Token name, DataTypes.Object value)
+	{
+		if (_environment.AssignVariable(name.Lexeme, value))
+			return value;
+		
+		_diagnostics.Add(new Diagnostic(name.Span, $"Local variable '{name.Lexeme}' is not defined"));
+		throw new InterpretException();
+	}
+
 	private static DataTypes.Object EvaluateLiteral(Token literal)
 	{
 		return literal.Type switch
@@ -113,5 +138,15 @@ public class Interpreter
 			
 			_ => throw new Exception("Invalid literal"),
 		};
+	}
+
+	private DataTypes.Object EvaluateVariable(Token name)
+	{
+		var variable = _environment.FindVariable(name.Lexeme);
+		if (variable is not null)
+			return variable;
+		
+		_diagnostics.Add(new Diagnostic(name.Span, $"Variable '{name.Lexeme}' is not defined"));
+		throw new InterpretException();
 	}
 }

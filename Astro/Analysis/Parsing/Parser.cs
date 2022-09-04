@@ -43,11 +43,32 @@ public class Parser
 	{
 		var statements = new List<StatementSyntax>();
 		while (!AtEnd())
-			statements.Add(ParseStatement());
+			statements.Add(ParseDeclaration());
 
 		return new ProgramSyntax(statements.ToArray());
 	}
 
+	private StatementSyntax ParseDeclaration()
+	{
+		if (Peek().Type == TokenType.Var)
+			return ParseVariableDeclaration();
+
+		return ParseStatement();
+	}
+
+	private VariableDeclarationSyntax ParseVariableDeclaration()
+	{
+		var varKeyword = Advance();
+		var name = Advance();
+		var initializer = Match(TokenType.Equals) ? ParseBinaryExpression() : null;
+		var span = initializer is not null
+			? varKeyword.Span.SpanTo(initializer.Span)
+			: varKeyword.Span.SpanTo(name.Span);
+
+		Consume(TokenType.Semicolon, "';'");
+		return new VariableDeclarationSyntax(span, name, initializer);
+	}
+	
 	private StatementSyntax ParseStatement()
 	{
 		return ParseExpressionStatement();
@@ -55,9 +76,26 @@ public class Parser
 
 	private StatementSyntax ParseExpressionStatement()
 	{
-		var expression = ParseBinaryExpression();
+		var expression = ParseAssignmentExpression();
 		Consume(TokenType.Semicolon, "';'");
 		return new ExpressionStatementSyntax(expression);
+	}
+
+	private ExpressionSyntax ParseAssignmentExpression()
+	{
+		var expr = ParseBinaryExpression();
+
+		if (Match(TokenType.Equals))
+		{
+			var value = ParseAssignmentExpression();
+			if (expr is VariableExpressionSyntax v)
+				return new AssignExpressionSyntax(v.Name, value);
+			
+			_diagnostics.Add(new Diagnostic(expr.Span, $"Invalid assignment target"));
+			throw new ParseException();
+		}
+
+		return expr;
 	}
 
 	private ExpressionSyntax ParseBinaryExpression(int precedence = 0)
@@ -96,6 +134,9 @@ public class Parser
 		
 		if (Match(TokenType.Number, TokenType.String, TokenType.True, TokenType.False, TokenType.Null))
 			return new LiteralExpressionSyntax(token, span);
+
+		if (Match(TokenType.Identifier))
+			return new VariableExpressionSyntax(token);
 		
 		_diagnostics.Add(new Diagnostic(TokenSpan, $"Expected a literal"));
 		throw new ParseException();
@@ -136,8 +177,9 @@ public class Parser
 			Advance();
 			return;
 		}
-		
-		_diagnostics.Add(new Diagnostic(TokenSpan, $"Expected {expect}"));
+
+		var span = new TextSpan(TokenSpan.Start + TokenSpan.Length, 1);
+		_diagnostics.Add(new Diagnostic(span, $"Expected {expect}"));
 		throw new ParseException();
 	}
 	
