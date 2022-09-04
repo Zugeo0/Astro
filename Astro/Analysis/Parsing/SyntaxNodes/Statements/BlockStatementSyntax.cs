@@ -8,12 +8,9 @@ public class BlockStatementSyntax : StatementSyntax
 	
 	public List<StatementSyntax> Statements { get; }
 
-	public BlockStatementSyntax(Token leftBrace, List<StatementSyntax> statements)
+	public BlockStatementSyntax(Token leftBrace, List<StatementSyntax> statements, Token rightBrace)
 	{
-		Span = statements.Count > 0 
-			? leftBrace.Span.SpanTo(statements.Last().Span) 
-			: leftBrace.Span;
-
+		Span = leftBrace.Span.SpanTo(rightBrace.Span);
 		Statements = statements;
 	}
 }

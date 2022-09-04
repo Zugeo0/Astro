@@ -104,8 +104,8 @@ public class Parser
 		while (!AtEnd() && Peek().Type != TokenType.RightBrace)
 			statements.Add(ParseDeclaration());
 		
-		Consume(TokenType.RightBrace, "'}'");
-		return new BlockStatementSyntax(leftBrace, statements);
+		var rightBrace = Consume(TokenType.RightBrace, "'}'");
+		return new BlockStatementSyntax(leftBrace, statements, rightBrace);
 	}
 
 	private StatementSyntax ParseExpressionStatement()
@@ -210,13 +210,13 @@ public class Parser
 		}
 	}
 
-	private void Consume(TokenType type, string expect)
+	private Token Consume(TokenType type, string expect)
 	{
 		var token = Peek();
 		if (token.Type == type)
 		{
 			Advance();
-			return;
+			return token;
 		}
 
 		var span = new TextSpan(TokenSpan.Start + TokenSpan.Length, 1);
