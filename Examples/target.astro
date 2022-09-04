@@ -1,0 +1,36 @@
+﻿require Console;
+require Filesystem as FS;
+
+mod Program {
+
+    class A
+    {
+        private float value;
+    
+        public constructor(float value)
+        {
+            this.value = value;
+        }
+        
+        virtual method void Print()
+        {
+            Console.Out(this.value);
+        }
+    }
+
+    [Entry]
+    public void Main()
+    {
+        var result = DoMath(5, 8);
+        Console.Out(result);
+        FS.ReadFile("file.txt");
+        
+        var a = new A(7);
+        a.Print();
+    }
+    
+    private float DoMath(float a, float b)
+    {
+        return a + b;
+    }
+}
