@@ -26,7 +26,7 @@ public class SourceText
 			var idx = (lower + upper) / 2;
 			var line = _lines[idx];
 			var start = line.Span.Start;
-			var end = line.Span.Start + line.Span.Length;
+			var end = line.Span.Start + line.Span.Length - 1;
 			
 			if (index >= start && index <= end)
 				return idx;
