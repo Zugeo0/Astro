@@ -9,6 +9,7 @@ public class Parser
 	private readonly Token[] _tokens;
 	private readonly DiagnosticList _diagnostics;
 	private int _index;
+	private bool _inFunction;
 
 	private TextSpan TokenSpan => Peek().Span;
 	
@@ -62,8 +63,8 @@ public class Parser
 		var name = Advance();
 		var initializer = Match(TokenType.Equals) ? ParseBinaryExpression() : null;
 		var span = initializer is not null
-			? varKeyword.Span.SpanTo(initializer.Span)
-			: varKeyword.Span.SpanTo(name.Span);
+			? varKeyword.Span.ExtendTo(initializer.Span)
+			: varKeyword.Span.ExtendTo(name.Span);
 
 		Consume(TokenType.Semicolon, "';' after variable declaration");
 		return new VariableDeclarationSyntax(span, name, initializer);
@@ -83,9 +84,27 @@ public class Parser
 				return ParseForStatement();
 			case TokenType.Function:
 				return ParseFunctionStatement();
+			case TokenType.Return:
+				return ParseReturnStatement();
 		}
 		
 		return ParseExpressionStatement();
+	}
+
+	private StatementSyntax ParseReturnStatement()
+	{
+		var keyword = Advance();
+		
+		if (!_inFunction)
+		{
+			_diagnostics.Add(new Diagnostic(keyword.Span, "Return statement not allowed outside of a function or method"));
+			throw new ParseException();
+		}
+		
+		var value = ParseBinaryExpression();
+		Consume(TokenType.Semicolon, "';' after return statement");
+
+		return new ReturnStatementSyntax(keyword.Span.ExtendTo(value.Span), keyword, value);
 	}
 
 	private StatementSyntax ParseFunctionStatement()
@@ -103,19 +122,22 @@ public class Parser
 				var varName = Consume(TokenType.Identifier, "variable name in parameter list");
 				if (arguments.Count > 255)
 				{
-					_diagnostics.Add(new Diagnostic(leftParent.Span.SpanTo(varName.Span), "Too many parameters in parameter list"));
+					_diagnostics.Add(new Diagnostic(leftParent.Span.ExtendTo(varName.Span), "Too many parameters in parameter list"));
 					throw new ParseException();
 				}
 
 				arguments.Add(varName);
-			} while (!AtEnd() && Peek().Type == TokenType.Comma);
+			} while (!AtEnd() && Match(TokenType.Comma));
 		}
 		
 		Consume(TokenType.RightParen, "')' after argument list");
 		Consume(TokenType.LeftBrace, "'{' after function declaration", false);
+		var wasInFunction = _inFunction;
+		_inFunction = true;
 		var body = ParseBlockStatement();
-
-		return new FunctionDeclarationSyntax(keyword.Span.SpanTo(body.Span), keyword, name, arguments, body);
+		_inFunction = wasInFunction;
+		
+		return new FunctionDeclarationSyntax(keyword.Span.ExtendTo(body.Span), keyword, name, arguments, body);
 	}
 
 	private StatementSyntax ParseForStatement()
@@ -145,7 +167,7 @@ public class Parser
 		}
 
 		block.Add(new WhileStatementSyntax(condition, bodyBlock));
-		return new BlockStatementSyntax(forToken.Span.SpanTo(rightParen.Span), block);
+		return new BlockStatementSyntax(forToken.Span.ExtendTo(rightParen.Span), block);
 	}
 
 	private StatementSyntax ParseWhileStatement()
@@ -170,7 +192,7 @@ public class Parser
 		var elseBranch = Match(TokenType.Else)
 			? ParseDeclaration()
 			: null;
-		var span = ifToken.Span.SpanTo(elseBranch?.Span ?? thenBranch.Span);
+		var span = ifToken.Span.ExtendTo(elseBranch?.Span ?? thenBranch.Span);
 		return new IfStatementSyntax(span, condition, thenBranch, elseBranch);
 	}
 
@@ -182,7 +204,7 @@ public class Parser
 			statements.Add(ParseDeclaration());
 		
 		var rightBrace = Consume(TokenType.RightBrace, "'}' after block");
-		var span = leftBrace.Span.SpanTo(rightBrace.Span);
+		var span = leftBrace.Span.ExtendTo(rightBrace.Span);
 		return new BlockStatementSyntax(span, statements);
 	}
 
@@ -273,7 +295,7 @@ public class Parser
 			}
 
 			var rightParen = Consume(TokenType.RightParen, "')' after arguments");
-			expr = new CallExpressionSyntax(span.SpanTo(rightParen.Span), expr, arguments, leftParen, rightParen);
+			expr = new CallExpressionSyntax(span.ExtendTo(rightParen.Span), expr, arguments, leftParen, rightParen);
 		}
 
 		return expr;

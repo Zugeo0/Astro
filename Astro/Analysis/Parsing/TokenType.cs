@@ -43,6 +43,7 @@ public enum TokenType
 	While,
 	For,
 	Function,
+	Return,
 	
 	// Special
 	EndOfFile,

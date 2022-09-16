@@ -144,6 +144,7 @@ public class Scanner
 			"while" => TokenType.While,
 			"for"   => TokenType.For,
 			"function" => TokenType.Function,
+			"return"   => TokenType.Return,
 			
 			_       => TokenType.Identifier
 		};

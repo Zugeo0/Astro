@@ -16,6 +16,6 @@ public class BinaryExpressionSyntax : ExpressionSyntax
 		Left = left;
 		Operator = op;
 		Right = right;
-		Span = left.Span.SpanTo(right.Span);
+		Span = left.Span.ExtendTo(right.Span);
 	}
 }

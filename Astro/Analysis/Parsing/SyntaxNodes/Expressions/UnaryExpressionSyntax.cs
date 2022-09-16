@@ -14,6 +14,6 @@ public class UnaryExpressionSyntax : ExpressionSyntax
 	{
 		Operator = op;
 		Right = right;
-		Span = op.Span.SpanTo(right.Span);
+		Span = op.Span.ExtendTo(right.Span);
 	}
 }

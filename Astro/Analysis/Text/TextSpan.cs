@@ -11,5 +11,5 @@ public class TextSpan
 		Length = length;
 	}
 
-	public TextSpan SpanTo(TextSpan span, bool ignoreLength = false) => new TextSpan(Start, span.Start - Start + (ignoreLength ? 0 : span.Length));
+	public TextSpan ExtendTo(TextSpan span, bool ignoreLength = false) => new TextSpan(Start, span.Start - Start + (ignoreLength ? 0 : span.Length));
 }

@@ -17,6 +17,14 @@ public class Environment
 		BeginScope();
 	}
 
+	private Environment(List<Module> exposedModules, Stack<Scope> scopes)
+	{
+		_exposedModules = exposedModules;
+		_scopes = new Stack<Scope>(scopes);
+	}
+
+	public Environment Reference() => new(_exposedModules, _scopes);
+
 	public bool LocalDeclaredInCurrentScope(string name) => _scopes.Peek().HasLocal(name);
 	
 	public void DeclareLocal(string name, Object value)

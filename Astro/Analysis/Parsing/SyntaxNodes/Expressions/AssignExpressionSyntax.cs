@@ -13,6 +13,6 @@ public class AssignExpressionSyntax : ExpressionSyntax
 	{
 		Name = name;
 		Value = value;
-		Span = name.Span.SpanTo(value.Span);
+		Span = name.Span.ExtendTo(value.Span);
 	}
 }

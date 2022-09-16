@@ -2,12 +2,23 @@
 using AstroLang.Analysis.Parsing.SyntaxNodes;
 using AstroLang.Runtime.DataTypes;
 using AstroLang.Diagnostics;
+using Object = AstroLang.Runtime.DataTypes.Object;
 
 namespace AstroLang.Runtime;
 
 public class Interpreter
 {
 	private class InterpretException : Exception {}
+
+	public class ReturnException : Exception
+	{
+		public DataTypes.Object Value { get; }
+
+		public ReturnException(Object value)
+		{
+			Value = value;
+		}
+	}
 	
 	private readonly DiagnosticList _diagnostics;
 
@@ -54,12 +65,21 @@ public class Interpreter
 			case FunctionDeclarationSyntax s:
 				ExecuteFunctionDeclaration(s);
 				break;
+			case ReturnStatementSyntax s:
+				ExecuteReturnStatement(s);
+				break;
 		}
 	}
 
+	private void ExecuteReturnStatement(ReturnStatementSyntax statement)
+	{
+		var value = Evaluate(statement.Value);
+		throw new ReturnException(value);
+	}
+	
 	private void ExecuteFunctionDeclaration(FunctionDeclarationSyntax declaration)
 	{
-		var function = new Function(declaration);
+		var function = new Function(declaration, Environment.Reference());
 		Environment.DeclareLocal(declaration.Name.Lexeme, function);
 	}
 
@@ -231,7 +251,7 @@ public class Interpreter
 
 		if (arguments.Count != callable.Arity())
 		{
-			var span = call.LeftParen.Span.SpanTo(call.RightParen.Span);
+			var span = call.LeftParen.Span.ExtendTo(call.RightParen.Span);
 			_diagnostics.Add(new Diagnostic(span, $"Incorrect number of arguments. Expected {callable.Arity()}, got {arguments.Count}"));
 			throw new InterpretException();
 		}
