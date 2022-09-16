@@ -103,16 +103,16 @@ public class Parser
 		if (initializer is not null)
 			block.Add(initializer);
 
-		Consume(TokenType.LeftBrace, "'{' after for loop declaration", false);
-		var body = (BlockStatementSyntax)ParseBlockStatement();
-
+		var body = ParseStatement();
+		var bodyBlock = new BlockStatementSyntax(body.Span, new List<StatementSyntax> { body });
+		
 		if (finalizer is not null)
 		{
 			var finalizerStatement = new ExpressionStatementSyntax(finalizer);
-			body.Statements.Add(finalizerStatement);
+			bodyBlock.Statements.Add(finalizerStatement);
 		}
 
-		block.Add(new WhileStatementSyntax(condition, body));
+		block.Add(new WhileStatementSyntax(condition, bodyBlock));
 		return new BlockStatementSyntax(forToken.Span.SpanTo(rightParen.Span), block);
 	}
 
