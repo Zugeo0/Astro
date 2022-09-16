@@ -3,6 +3,7 @@ using AstroLang.Analysis.Text;
 using AstroLang.Diagnostics;
 using AstroLang.Runtime;
 using AstroLang.Runtime.NativeModules;
+using AstroLang.Runtime.NativeModules.Console;
 using AstroLang.Runtime.NativeModules.Time;
 
 namespace AstroLang;
@@ -17,7 +18,8 @@ public class Astro
 		_environment = new Runtime.Environment();
 		_nativeModules = new List<INativeModule>
 		{
-			new ModTime()
+			new ModTime(),
+			new ModConsole()
 		};
 	}
 

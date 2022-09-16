@@ -36,8 +36,7 @@ public class Interpreter
 		switch (statement)
 		{
 			case ExpressionStatementSyntax s:
-				var result = Evaluate(s.Expression);
-				Console.WriteLine($"{result}");
+				Evaluate(s.Expression);
 				break;
 			case VariableDeclarationSyntax s:
 				ExecuteVariableDeclaration(s);
