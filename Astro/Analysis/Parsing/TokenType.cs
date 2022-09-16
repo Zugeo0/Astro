@@ -42,6 +42,7 @@ public enum TokenType
 	Or,
 	While,
 	For,
+	Function,
 	
 	// Special
 	EndOfFile,

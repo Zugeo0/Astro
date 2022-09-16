@@ -10,12 +10,13 @@ public class Interpreter
 	private class InterpretException : Exception {}
 	
 	private readonly DiagnosticList _diagnostics;
-	private readonly Environment _environment;
+
+	internal Environment Environment { get; private set; }
 	
 	public Interpreter(DiagnosticList diagnostics, Environment environment)
 	{
 		_diagnostics = diagnostics;
-		_environment = environment;
+		Environment = environment;
 	}
 
 	public static void Interpret(SyntaxTree syntaxTree, DiagnosticList diagnostics, Environment? environment = null)
@@ -31,7 +32,7 @@ public class Interpreter
 		catch (InterpretException) { }
 	}
 
-	private void Execute(StatementSyntax statement)
+	internal void Execute(StatementSyntax statement)
 	{
 		switch (statement)
 		{
@@ -50,19 +51,28 @@ public class Interpreter
 			case WhileStatementSyntax s:
 				ExecuteWhileStatement(s);
 				break;
+			case FunctionDeclarationSyntax s:
+				ExecuteFunctionDeclaration(s);
+				break;
 		}
+	}
+
+	private void ExecuteFunctionDeclaration(FunctionDeclarationSyntax declaration)
+	{
+		var function = new Function(declaration);
+		Environment.DeclareLocal(declaration.Name.Lexeme, function);
 	}
 
 	private void ExecuteVariableDeclaration(VariableDeclarationSyntax declaration)
 	{
-		if (_environment.LocalDeclaredInCurrentScope(declaration.Name.Lexeme))
+		if (Environment.LocalDeclaredInCurrentScope(declaration.Name.Lexeme))
 		{
 			_diagnostics.Add(new Diagnostic(declaration.Name.Span, $"Variable '{declaration.Name.Lexeme}' has already been declared"));
 			throw new InterpretException();
 		}
 		
 		var value = declaration.Initializer is not null ? Evaluate(declaration.Initializer) : new Null();
-		_environment.DeclareLocal(declaration.Name.Lexeme, value);
+		Environment.DeclareLocal(declaration.Name.Lexeme, value);
 	}
 
 	private void ExecuteWhileStatement(WhileStatementSyntax whileStatement)
@@ -82,13 +92,13 @@ public class Interpreter
 
 	private void ExecuteBlockStatement(BlockStatementSyntax blockStatement)
 	{
-		_environment.BeginScope();
+		Environment.BeginScope();
 		foreach (var statement in blockStatement.Statements)
 			Execute(statement);
-		_environment.EndScope();
+		Environment.EndScope();
 	}
 	
-	private DataTypes.Object Evaluate(ExpressionSyntax expression)
+	internal DataTypes.Object Evaluate(ExpressionSyntax expression)
 	{
 		switch (expression)
 		{
@@ -198,7 +208,7 @@ public class Interpreter
 		var name = assignExpression.Name.Lexeme;
 		var value = Evaluate(assignExpression.Value);
 		
-		if (_environment.AssignLocal(name, value))
+		if (Environment.AssignLocal(name, value))
 			return value;
 		
 		_diagnostics.Add(new Diagnostic(assignExpression.Name.Span, $"Local variable '{name}' is not defined"));
@@ -246,7 +256,7 @@ public class Interpreter
 
 	private DataTypes.Object EvaluateVariable(VariableExpressionSyntax variableExpression)
 	{
-		var variable = _environment.FindVariable(variableExpression.Name.Lexeme);
+		var variable = Environment.FindVariable(variableExpression.Name.Lexeme);
 		if (variable is not null)
 			return variable;
 		

@@ -81,9 +81,41 @@ public class Parser
 				return ParseWhileStatement();
 			case TokenType.For:
 				return ParseForStatement();
+			case TokenType.Function:
+				return ParseFunctionStatement();
 		}
 		
 		return ParseExpressionStatement();
+	}
+
+	private StatementSyntax ParseFunctionStatement()
+	{
+		var keyword = Advance();
+		var name = Consume(TokenType.Identifier, "identifier after 'function'");
+
+		var leftParent = Consume(TokenType.LeftParen, "'(' after function name");
+
+		var arguments = new List<Token>();
+		if (Peek().Type != TokenType.RightParen)
+		{
+			do
+			{
+				var varName = Consume(TokenType.Identifier, "variable name in parameter list");
+				if (arguments.Count > 255)
+				{
+					_diagnostics.Add(new Diagnostic(leftParent.Span.SpanTo(varName.Span), "Too many parameters in parameter list"));
+					throw new ParseException();
+				}
+
+				arguments.Add(varName);
+			} while (!AtEnd() && Peek().Type == TokenType.Comma);
+		}
+		
+		Consume(TokenType.RightParen, "')' after argument list");
+		Consume(TokenType.LeftBrace, "'{' after function declaration", false);
+		var body = ParseBlockStatement();
+
+		return new FunctionDeclarationSyntax(keyword.Span.SpanTo(body.Span), keyword, name, arguments, body);
 	}
 
 	private StatementSyntax ParseForStatement()

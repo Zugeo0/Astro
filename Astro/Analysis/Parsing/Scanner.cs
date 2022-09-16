@@ -143,6 +143,7 @@ public class Scanner
 			"or"    => TokenType.Or,
 			"while" => TokenType.While,
 			"for"   => TokenType.For,
+			"function" => TokenType.Function,
 			
 			_       => TokenType.Identifier
 		};
