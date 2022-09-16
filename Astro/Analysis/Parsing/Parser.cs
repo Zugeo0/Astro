@@ -268,34 +268,35 @@ public class Parser
 
 		while (true)
 		{
-			var leftParen = Peek();
-			if (!Match(TokenType.LeftParen))
-				break;
-
-			var arguments = new List<ExpressionSyntax>();
-			if (!AtEnd() && Peek().Type != TokenType.RightParen)
+			var firstToken = Peek();
+			
+			if (Match(TokenType.LeftParen))
 			{
-				do
+				var arguments = new List<ExpressionSyntax>();
+				if (Peek().Type != TokenType.RightParen)
 				{
-					if (arguments.Count == 255)
+					do
 					{
-						_diagnostics.Add(new Diagnostic(TokenSpan, $"Too many arguments in call"));
-						throw new ParseException();
-					}
-					
-					arguments.Add(ParseBinaryExpression());
+						if (arguments.Count == 255)
+						{
+							_diagnostics.Add(new Diagnostic(TokenSpan, $"Too many arguments in call"));
+							throw new ParseException();
+						}
+
+						arguments.Add(ParseBinaryExpression());
+					} while (Match(TokenType.Comma));
 				}
-				while (Match(TokenType.Comma));
-			}
 
-			if (AtEnd())
+				var rightParen = Consume(TokenType.RightParen, "')' after arguments");
+				expr = new CallExpressionSyntax(span.ExtendTo(rightParen.Span), expr, arguments, firstToken, rightParen);
+			}
+			else if (Match(TokenType.Dot))
 			{
-				_diagnostics.Add(new Diagnostic(TokenSpan, $"Expected ')' after arguments"));
-				throw new ParseException();
+				var name = Consume(TokenType.Identifier, "identifier after '.'");
+				expr = new AccessExpressionSyntax(expr.Span.ExtendTo(name.Span), expr, name);
 			}
-
-			var rightParen = Consume(TokenType.RightParen, "')' after arguments");
-			expr = new CallExpressionSyntax(span.ExtendTo(rightParen.Span), expr, arguments, leftParen, rightParen);
+			else
+				break;
 		}
 
 		return expr;

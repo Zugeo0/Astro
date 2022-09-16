@@ -30,7 +30,7 @@ public class Astro
 		if (module is null)
 			return false;
 		
-		_environment.ExposeModule(module.Define());
+		_environment.AddModule(module.Define());
 		return true;
 	}
 	

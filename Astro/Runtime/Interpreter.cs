@@ -125,7 +125,7 @@ public class Interpreter
 			case LiteralExpressionSyntax e:
 				return EvaluateLiteral(e);
 			case AssignExpressionSyntax e:
-				return EvaluateAssignExpression(e);
+				return EvaluateAssign(e);
 			case VariableExpressionSyntax e:
 				return EvaluateVariable(e);
 			case UnaryExpressionSyntax e:
@@ -134,6 +134,8 @@ public class Interpreter
 				return EvaluateBinary(e);
 			case CallExpressionSyntax e:
 				return EvaluateCall(e);
+			case AccessExpressionSyntax e:
+				return EvaluateAccess(e);
 		}
 
 		throw new Exception("Invalid Expression");
@@ -223,7 +225,19 @@ public class Interpreter
 		}
 	}
 
-	private DataTypes.Object EvaluateAssignExpression(AssignExpressionSyntax assignExpression)
+	private DataTypes.Object EvaluateAccess(AccessExpressionSyntax accessExpression)
+	{
+		var obj = Evaluate(accessExpression.Object);
+		if (obj is not IAccessible a)
+		{
+			_diagnostics.Add(new Diagnostic(accessExpression.Span, $"Object of type '{obj.TypeString()}' is not accessible"));
+			throw new InterpretException();
+		}
+
+		return a.Access(this, accessExpression.Name.Lexeme);
+	}
+
+	private DataTypes.Object EvaluateAssign(AssignExpressionSyntax assignExpression)
 	{
 		var name = assignExpression.Name.Lexeme;
 		var value = Evaluate(assignExpression.Value);
@@ -249,7 +263,7 @@ public class Interpreter
 			throw new InterpretException();
 		}
 
-		if (arguments.Count != callable.Arity())
+		if (arguments.Count != callable.Arity() && callable.Arity() != -1)
 		{
 			var span = call.LeftParen.Span.ExtendTo(call.RightParen.Span);
 			_diagnostics.Add(new Diagnostic(span, $"Incorrect number of arguments. Expected {callable.Arity()}, got {arguments.Count}"));

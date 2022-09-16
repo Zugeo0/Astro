@@ -126,7 +126,11 @@ public class Scanner
 		}
 
 		Advance();
-		return NewToken(TokenType.String);
+
+		var str = _sourceText.GetLexeme(Span)
+			.Replace("\\n", "\n");
+		
+		return new Token(TokenType.String, Span, str);
 	}
 
 	private static TokenType MatchKeyword(string identifier)

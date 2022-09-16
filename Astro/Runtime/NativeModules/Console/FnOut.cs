@@ -5,12 +5,13 @@ namespace AstroLang.Runtime.NativeModules.Console;
 
 public class FnOut : ICallable
 {
-	public int Arity() => 1;
+	public int Arity() => -1;
 
 	public Object Call(Interpreter interpreter, List<Object> arguments)
 	{
-		var arg = arguments[0];
-		System.Console.WriteLine(arg);
+		foreach (var arg in arguments)
+			System.Console.Write(arg);
+		
 		return new Null();
 	}
 }

@@ -1,4 +1,6 @@
-﻿namespace AstroLang.Runtime.NativeModules;
+﻿using AstroLang.Runtime.DataTypes;
+
+namespace AstroLang.Runtime.NativeModules;
 
 public interface INativeModule
 {

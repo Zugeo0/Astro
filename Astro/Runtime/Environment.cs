@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+﻿using AstroLang.Runtime.DataTypes;
 using Object = AstroLang.Runtime.DataTypes.Object;
 
 namespace AstroLang.Runtime;
@@ -7,23 +7,20 @@ public class ModuleAlreadyExistsException : Exception { }
 
 public class Environment
 {
-	private readonly List<Module> _exposedModules = new();
 	private readonly Stack<Scope> _scopes = new();
-
-	public ImmutableList<Module> ExposedModules => _exposedModules.ToImmutableList();
+	private readonly List<Module> _modules = new();
 
 	public Environment()
 	{
 		BeginScope();
 	}
 
-	private Environment(List<Module> exposedModules, Stack<Scope> scopes)
+	private Environment(Stack<Scope> scopes)
 	{
-		_exposedModules = exposedModules;
 		_scopes = new Stack<Scope>(scopes);
 	}
 
-	public Environment Reference() => new(_exposedModules, _scopes);
+	public Environment Reference() => new(_scopes);
 
 	public bool LocalDeclaredInCurrentScope(string name) => _scopes.Peek().HasLocal(name);
 	
@@ -48,34 +45,24 @@ public class Environment
 
 	public DataTypes.Object? FindVariable(string name)
 	{
-		foreach (var scope in _scopes)
-		{
-			var local = scope.GetLocal(name);
-			if (local is not null)
-				return local;
-		}
+		foreach (var module in _modules.Where(module => module.Name == name))
+			return module;
 
-		// TODO: Add dotted accessor
-		foreach (var module in _exposedModules)
-		{
-			var global = module.FindGlobal(name);
-			if (global is not null)
-				return global;
-		}
-
-		return null;
+		return _scopes
+			.Select(scope => scope.GetLocal(name))
+			.FirstOrDefault(local => local is not null);
 	}
 
 	public void BeginScope() => _scopes.Push(new Scope());
 	public void EndScope() => _scopes.Pop();
 
-	public void ExposeModule(Module module)
+	public void AddModule(Module module)
 	{
 		if (FindModule(module.Name) is not null)
 			throw new ModuleAlreadyExistsException();
 		
-		_exposedModules.Add(module);
+		_modules.Add(module);
 	}
 
-	public Module? FindModule(string name) => _exposedModules.FirstOrDefault(module => module.Name == name);
+	public Module? FindModule(string name) => _modules.Find(m => m.Name == name);
 }
