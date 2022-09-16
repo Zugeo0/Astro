@@ -17,13 +17,13 @@ public class Diagnostic
 	{
 		var lineIdx = source.FindLineIndex(Span.Start);
 		var line = source.GetLine(lineIdx);
-		var column = Span.Start - line.Span.Start;
+		var column = Span.Start - line.Span.Start + 1;
 		writer.WriteLine($"Error: {Message} at [{lineIdx + 1}:{column}]");
 
 		var lineNumberText = $"{lineIdx + 1} | ";
 		writer.WriteLine($"{lineNumberText}{line.Line.Replace("\n", "")}");
 
-		var arrowOffset = new string(' ', lineNumberText.Length + column);
+		var arrowOffset = new string(' ', lineNumberText.Length + column - 1);
 		var arrows = new string('^', Span.Length);
 		writer.WriteLine($"{arrowOffset}{arrows}-- here");
 	}
