@@ -22,6 +22,7 @@ public enum TokenType
 	Greater,
 	GreaterEquals,
 	Dot,
+	Comma,
 	Semicolon,
 	Bang,
 	Plus,

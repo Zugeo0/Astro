@@ -25,6 +25,7 @@ void LaunchREPL()
 
 	// Create new instance to store variables, etc...
 	var astro = new Astro();
+	astro.ExposeModule("Time");
 	
 	while (true)
 	{
@@ -49,7 +50,10 @@ void LaunchREPL()
 void RunFile(string path)
 {
 	string file = File.ReadAllText(path);
+	
 	var astro = new Astro();
+	astro.ExposeModule("Time");
+
 	astro.Run(file);
 }
 

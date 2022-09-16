@@ -11,4 +11,6 @@ public class Bool : Object
 
 	public override string ToString() => $"{Value}";
 	public override bool Equals(object? obj) => obj is Bool v && Value == v.Value;
+	public override string TypeString() => "bool";
+
 }

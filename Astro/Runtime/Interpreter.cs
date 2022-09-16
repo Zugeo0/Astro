@@ -103,6 +103,8 @@ public class Interpreter
 				return EvaluateUnary(e);
 			case BinaryExpressionSyntax e:
 				return EvaluateBinary(e);
+			case CallExpressionSyntax e:
+				return EvaluateCall(e);
 		}
 
 		throw new Exception("Invalid Expression");
@@ -169,7 +171,7 @@ public class Interpreter
 				return left == right;
 			case TokenType.BangEquals:
 				return left != right;
-
+			
 			default:
 				_diagnostics.Add(new Diagnostic(binaryExpression.Operator.Span, $"Invalid binary operation '{binaryExpression.Operator.Lexeme}' for types {left} and {right}"));
 				throw new InterpretException();
@@ -202,6 +204,30 @@ public class Interpreter
 		
 		_diagnostics.Add(new Diagnostic(assignExpression.Name.Span, $"Local variable '{name}' is not defined"));
 		throw new InterpretException();
+	}
+
+	private DataTypes.Object EvaluateCall(CallExpressionSyntax call)
+	{
+		var callee = Evaluate(call.Callee);
+
+		var arguments = call.Arguments
+			.Select(Evaluate)
+			.ToList();
+
+		if (callee is not ICallable callable)
+		{
+			_diagnostics.Add(new Diagnostic(call.Span, $"Type '{callee.TypeString()}' is not callable"));
+			throw new InterpretException();
+		}
+
+		if (arguments.Count != callable.Arity())
+		{
+			var span = call.LeftParen.Span.SpanTo(call.RightParen.Span);
+			_diagnostics.Add(new Diagnostic(span, $"Incorrect number of arguments. Expected {callable.Arity()}, got {arguments.Count}"));
+			throw new InterpretException();
+		}
+
+		return callable.Call(this, arguments);
 	}
 
 	private static DataTypes.Object EvaluateLiteral(LiteralExpressionSyntax literal)

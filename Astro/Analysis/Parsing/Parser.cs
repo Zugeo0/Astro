@@ -204,7 +204,47 @@ public class Parser
 		if (Match(TokenType.Bang, TokenType.Minus))
 			return new UnaryExpressionSyntax(op, ParseUnaryExpression());
 			
-		return ParsePrimaryExpression();
+		return ParseCallExpression();
+	}
+
+	private ExpressionSyntax ParseCallExpression()
+	{
+		var expr = ParsePrimaryExpression();
+		var span = expr.Span;
+
+		while (true)
+		{
+			var leftParen = Peek();
+			if (!Match(TokenType.LeftParen))
+				break;
+
+			var arguments = new List<ExpressionSyntax>();
+			if (!AtEnd() && Peek().Type != TokenType.RightParen)
+			{
+				do
+				{
+					if (arguments.Count == 255)
+					{
+						_diagnostics.Add(new Diagnostic(TokenSpan, $"Too many arguments in call"));
+						throw new ParseException();
+					}
+					
+					arguments.Add(ParseBinaryExpression());
+				}
+				while (Match(TokenType.Comma));
+			}
+
+			if (AtEnd())
+			{
+				_diagnostics.Add(new Diagnostic(TokenSpan, $"Expected ')' after arguments"));
+				throw new ParseException();
+			}
+
+			var rightParen = Consume(TokenType.RightParen, "')' after arguments");
+			expr = new CallExpressionSyntax(span.SpanTo(rightParen.Span), expr, arguments, leftParen, rightParen);
+		}
+
+		return expr;
 	}
 
 	private ExpressionSyntax ParsePrimaryExpression()

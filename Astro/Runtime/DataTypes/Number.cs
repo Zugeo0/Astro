@@ -32,4 +32,6 @@ public class Number : Object
 	public override bool Equals(object? obj) => obj is Number v && Value == v.Value;
 
 	public override string ToString() => $"{Value}";
+	public override string TypeString() => "number";
+
 }

@@ -27,4 +27,6 @@ public class Object
 	public static Bool operator !=(Object left, Object right) => !left.IsEqual(right);
 	
 	public static Bool operator !(Object value) => new(!value.IsTruthful());
+
+	public virtual string TypeString() => "object";
 }

@@ -55,6 +55,7 @@ public class Scanner
 			case '}': return NewToken(TokenType.RightBrace);
 			
 			case '.': return NewToken(TokenType.Dot);
+			case ',': return NewToken(TokenType.Comma);
 			case ';': return NewToken(TokenType.Semicolon);
 			
 			case '+': return NewToken(TokenType.Plus);
