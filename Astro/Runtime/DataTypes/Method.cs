@@ -29,7 +29,7 @@ public class Method : Object, ICallable
 		
 		try
 		{
-			interpreter.Execute(_function.Body);
+			interpreter.Execute(_function.Body, _closure);
 		}
 		catch (Interpreter.ReturnException e)
 		{

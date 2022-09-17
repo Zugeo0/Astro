@@ -1,4 +1,5 @@
-﻿using AstroLang.Runtime.DataTypes;
+﻿using AstroLang.Analysis.Parsing;
+using AstroLang.Runtime.DataTypes;
 
 namespace AstroLang.Runtime.NativeModules.Time;
 
@@ -6,9 +7,9 @@ public class ModTime : INativeModule
 {
 	public Module Define()
 	{
-		var module = new Module(Name());
+		var module = new Module(Name(), AccessModifier.Public);
 
-		module.AddGlobal("Current", NativeFunction.From<FnCurrent>());
+		module.AddProperty("Current", NativeFunction.From<FnCurrent>(), AccessModifier.Public);
 		
 		return module;
 	}

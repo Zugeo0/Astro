@@ -1,4 +1,50 @@
-﻿
-require Console;
+﻿require Console;
 
-Console.Out("Hello!\n");
+public mod Math
+{
+    public class Vector2
+    {
+        public var x;
+        public var y;
+    
+        public constructor(x, y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+        
+        public method Add(other)
+        {
+            this.x = this.x + other.x;
+            this.y = this.y + other.y;
+        }
+        
+        public method Print()
+        {
+            Console.Out("Vector2 (x: ", this.x, ", y: ", this.y, ")\n");
+        }
+    }
+
+    public function Add(a, b)
+    {
+        return a + b;
+    }
+}
+
+public mod Program
+{
+    public function GimmeVector()
+    {
+        return new Math.Vector2(10, 5);
+    }
+
+    public function Main()
+    {
+        var vec2 = GimmeVector();
+        vec2.Print();
+        vec2.Add(new Math.Vector2(1, 1));
+        vec2.Print();
+        
+        Console.Out(Math.Add(5, 8), "\n");
+    }
+}

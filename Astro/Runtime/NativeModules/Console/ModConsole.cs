@@ -1,4 +1,5 @@
-﻿using AstroLang.Runtime.DataTypes;
+﻿using AstroLang.Analysis.Parsing;
+using AstroLang.Runtime.DataTypes;
 
 namespace AstroLang.Runtime.NativeModules.Console;
 
@@ -6,9 +7,9 @@ public class ModConsole : INativeModule
 {
 	public Module Define()
 	{
-		var module = new Module(Name());
+		var module = new Module(Name(), AccessModifier.Public);
 
-		module.AddGlobal("Out", NativeFunction.From<FnOut>());
+		module.AddProperty("Out", NativeFunction.From<FnOut>(), AccessModifier.Public);
 		
 		return module;
 	}

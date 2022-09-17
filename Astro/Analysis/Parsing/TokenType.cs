@@ -53,6 +53,7 @@ public enum TokenType
 	Return,
 	Require,
 	As,
+	Mod,
 	
 	// Special
 	Inserted,

@@ -151,6 +151,7 @@ public class Scanner
 			"new"   => TokenType.New,
 			"break" => TokenType.Break,
 			"as"    => TokenType.As,
+			"mod"   => TokenType.Mod,
 			"require"     => TokenType.Require,
 			"function"    => TokenType.Function,
 			"return"      => TokenType.Return,

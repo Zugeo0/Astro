@@ -44,11 +44,28 @@ public class Interpreter
 			foreach (var statement in syntaxTree.Root.Statements)
 				interpreter.Execute(statement);
 		}
+		catch (InterpretException)
+		{
+			return;
+		}
+		
+		try
+		{
+			var entry = environment.FindEntry();
+			if (entry is not null)
+				entry.Call(interpreter, new());
+			else
+				diagnostics.Add(new Diagnostic(new TextSpan(syntaxTree.Root.Span.Start + syntaxTree.Root.Span.Length, 1), "No entry point defined"));
+		}
 		catch (InterpretException) { }
 	}
 
-	internal void Execute(StatementSyntax statement)
+	internal void Execute(StatementSyntax statement, Environment? environment = null)
 	{
+		var prevEnvironment = Environment;
+		if (environment is not null)
+			Environment = environment;
+		
 		switch (statement)
 		{
 			case ExpressionStatementSyntax s:
@@ -81,7 +98,23 @@ public class Interpreter
 			case RequireStatementSyntax s:
 				ExecuteRequireStatement(s);
 				break;
+			case ModDeclarationSyntax s:
+				ExecuteModDeclaration(s);
+				break;
 		}
+		
+		if (environment is not null)
+			Environment = prevEnvironment;
+	}
+
+	private void ExecuteModDeclaration(ModDeclarationSyntax mod)
+	{
+		Environment.BeginModule(this, mod.Name, mod.AccessModifier);
+
+		foreach (var declaration in mod.Declarations)
+			Execute(declaration);
+		
+		Environment.EndModule();
 	}
 
 	private void ExecuteRequireStatement(RequireStatementSyntax require)
@@ -112,7 +145,7 @@ public class Interpreter
 			switch (property.Declaration)
 			{
 				case FunctionDeclarationSyntax function:
-					var func = new Function(function, Environment, function.Type);
+					var func = new Function(function, Environment, function.Type, function.Accessability, function.Flags);
 					functions.Add(function.Name.Lexeme, func);
 					
 					break;
@@ -127,11 +160,11 @@ public class Interpreter
 
 		Function? constructor = null;
 		if (declaration.Constructor?.Declaration is FunctionDeclarationSyntax fn)
-			constructor = new(fn, Environment, fn.Type);
+			constructor = new(fn, Environment, fn.Type, fn.Accessability, fn.Flags);
 		
 		var @class = new Class(declaration.Name.Lexeme, fields, functions, constructor);
 		Environment.EndScope();
-		Environment.DefineLocal(declaration.Name.Lexeme, @class);
+		Environment.DefineProperty(declaration.Name.Lexeme, @class, declaration.Accessability);
 	}
 
 	private void ExecuteReturnStatement(ReturnStatementSyntax statement)
@@ -142,8 +175,8 @@ public class Interpreter
 	
 	private void ExecuteFunctionDeclaration(FunctionDeclarationSyntax declaration)
 	{
-		var function = new Function(declaration, Environment.Reference(), declaration.Type);
-		Environment.DefineLocal(declaration.Name.Lexeme, function);
+		var function = new Function(declaration, Environment.ReferenceSnapshot(), declaration.Type, declaration.Accessability, declaration.Flags);
+		Environment.DefineProperty(declaration.Name.Lexeme, function, declaration.Accessability);
 	}
 
 	private void ExecuteVariableDeclaration(VariableDeclarationSyntax declaration)

@@ -6,12 +6,16 @@ namespace AstroLang.Runtime.DataTypes;
 public class Function : Object, ICallable
 {
 	public FunctionType Type { get; }
+	public AccessModifier AccessModifier { get; }
+	public List<DeclarationFlag> Flags { get; }
 	private readonly FunctionDeclarationSyntax _function;
 	private readonly Environment _closure;
 
-	public Function(FunctionDeclarationSyntax function, Environment closure, FunctionType type)
+	public Function(FunctionDeclarationSyntax function, Environment closure, FunctionType type, AccessModifier accessModifier, List<DeclarationFlag> flags)
 	{
 		Type = type;
+		AccessModifier = accessModifier;
+		Flags = flags;
 		_function = function;
 		_closure = closure;
 	}
@@ -31,7 +35,7 @@ public class Function : Object, ICallable
 		
 		try
 		{
-			interpreter.Execute(_function.Body);
+			interpreter.Execute(_function.Body, _closure);
 		}
 		catch (Interpreter.ReturnException e)
 		{

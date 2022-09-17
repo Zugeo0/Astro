@@ -4,22 +4,39 @@ namespace AstroLang.Runtime.DataTypes;
 
 public class Module : Object, IAccessible
 {
-	public string Name { get; }
+	private record ModuleGlobal(Object Global, AccessModifier Accessability);
 	
-	private Dictionary<string, Object> _globals = new();
+	public string Name { get; }
+	public AccessModifier Accessability { get; }
 
-	public Module(string name)
+	private Dictionary<string, ModuleGlobal> _globals = new();
+
+	public Module(string name, AccessModifier accessability)
 	{
 		Name = name;
+		Accessability = accessability;
 	}
 
 	public Object Access(Interpreter interpreter, Token name)
 	{
-		return FindGlobal(name.Lexeme);
+		return FindProperty(name.Lexeme) ?? new Null();
 	}
 
-	public void AddGlobal(string name, DataTypes.Object value) => _globals.Add(name, value);
-	public void RemoveGlobal(string name) => _globals.Remove(name);
+	public void AddProperty(string name, Object value, AccessModifier access) => _globals.Add(name, new(value, access));
+	public void RemoveProperty(string name) => _globals.Remove(name);
 
-	public Object FindGlobal(string name) => _globals.ContainsKey(name) ? _globals[name] : new Null();
+	public Object? FindProperty(string name) => _globals.ContainsKey(name) ? _globals[name].Global : null;
+
+	public Function? FindEntry()
+	{
+		foreach (var values in _globals.Values)
+			if (values.Global is Function f && f.Flags.Exists(flag => flag == DeclarationFlag.MainFunction))
+				return f;
+		
+		return null;
+	}
+
+	public override string TypeString() => "Module";
+
+	public override string ToString() => $"{Name}Module";
 }
