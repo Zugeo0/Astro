@@ -271,7 +271,7 @@ public class Parser
 		
 		Consume(TokenType.LeftParen, "'(' after 'for' keyword");
 		var initializer = Match(TokenType.Semicolon) ? null : ParseDeclaration();
-		var condition = Match(TokenType.Semicolon)
+		var condition = Peek().Type == TokenType.Semicolon
 			? new LiteralExpressionSyntax(new Token(TokenType.True, TokenSpan, "true"), TokenSpan)
 			: ParseBinaryExpression();
 		Consume(TokenType.Semicolon, "';' after condition");
