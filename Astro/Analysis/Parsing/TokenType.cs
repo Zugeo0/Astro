@@ -36,6 +36,7 @@ public enum TokenType
 	Class,
 	New,
 	Constructor,
+	Break,
 	
 	// Keywords
 	True,

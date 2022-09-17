@@ -10,7 +10,8 @@ namespace AstroLang.Runtime;
 public class Interpreter
 {
 	private class InterpretException : Exception {}
-
+	
+	public class BreakException: Exception {}
 	public class ReturnException : Exception
 	{
 		public DataTypes.Object Value { get; }
@@ -71,6 +72,9 @@ public class Interpreter
 				break;
 			case ClassDeclarationSyntax s:
 				ExecuteClassDeclaration(s);
+				break;
+			case BreakStatementSyntax s:
+				ExecuteBreakStatement(s);
 				break;
 		}
 	}
@@ -133,10 +137,24 @@ public class Interpreter
 		Environment.DefineLocal(declaration.Name.Lexeme, value);
 	}
 
+	private void ExecuteBreakStatement(BreakStatementSyntax breakStatement)
+	{
+		throw new BreakException();
+	}
+	
 	private void ExecuteWhileStatement(WhileStatementSyntax whileStatement)
 	{
 		while (Evaluate(whileStatement.Condition).IsTruthful())
-			Execute(whileStatement.Body);
+		{
+			try
+			{
+				Execute(whileStatement.Body);
+			}
+			catch (BreakException)
+			{
+				break;
+			}
+		}
 	}
 
 	private void ExecuteIfStatement(IfStatementSyntax ifStatement)

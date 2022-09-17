@@ -10,6 +10,7 @@ public class Parser
 	private readonly DiagnosticList _diagnostics;
 	private int _index;
 	private bool _inFunction;
+	private bool _inLoop;
 
 	private TextSpan TokenSpan => Peek().Span;
 	
@@ -86,6 +87,8 @@ public class Parser
 				return ParseFunctionStatement();
 			case TokenType.Return:
 				return ParseReturnStatement();
+			case TokenType.Break:
+				return ParseBreakStatement();
 			
 			case TokenType.Public:
 			case TokenType.Private:
@@ -104,6 +107,20 @@ public class Parser
 		return ParseExpressionStatement();
 	}
 
+	private StatementSyntax ParseBreakStatement()
+	{
+		var breakKeyword = Advance();
+		
+		if (!_inLoop)
+		{
+			_diagnostics.Add(new Diagnostic(breakKeyword.Span, "Break statement not allowed outside of a loop"));
+			throw new ParseException();
+		}
+
+		Consume(TokenType.Semicolon, "';' after break statement");
+		return new BreakStatementSyntax(breakKeyword);
+	}
+	
 	private StatementSyntax ParseReturnStatement()
 	{
 		var keyword = Advance();
@@ -265,7 +282,9 @@ public class Parser
 		if (initializer is not null)
 			block.Add(initializer);
 
+		_inLoop = true;
 		var body = ParseStatement();
+		_inLoop = false;
 		var bodyBlock = new BlockStatementSyntax(body.Span, new List<StatementSyntax> { body });
 		
 		if (finalizer is not null)
@@ -284,8 +303,10 @@ public class Parser
 		Consume(TokenType.LeftParen, "'(' after 'while' keyword");
 		var condition = ParseBinaryExpression();
 		Consume(TokenType.RightParen, "')' after condition");
-		
+
+		_inLoop = true;
 		var body = ParseStatement();
+		_inLoop = false;
 		return new WhileStatementSyntax(condition, body);
 	}
 	

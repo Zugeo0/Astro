@@ -1,43 +1,10 @@
 ﻿
-public class Number
+var i = 0;
+
+while (true)
 {
-    private var number;
-
-    public constructor(number)
-    {
-        this.number = number;
-    }
-    
-    public method Get()
-    {
-        return this.number;
-    }
-    
-    public method Set(number)
-    {
-        this.number = number;
-    }
-    
-    public method Print()
-    {
-        Console.Out(this.number, "\n");
-    }
-    
-    public function Null()
-    {
-        return new Number(null);
-    }
+    i = i + 1;
+    Console.Out(i, "\n");
+    if (i == 10)
+        break;
 }
-
-var num1 = new Number(15);
-Console.Out("num1: ", num1.Get(), "\n");
-num1.Set(20);
-Console.Out("num1: ", num1.Get(), "\n");
-
-var num2 = Number.Null();
-Console.Out("num2: ", num2.Get(), "\n");
-num2.Set(5);
-Console.Out("num2: ", num2.Get(), "\n");
-
-num1.Print();
-num2.Print();
