@@ -51,6 +51,8 @@ public enum TokenType
 	For,
 	Function,
 	Return,
+	Require,
+	As,
 	
 	// Special
 	Inserted,

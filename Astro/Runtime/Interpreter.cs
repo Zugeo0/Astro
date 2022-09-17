@@ -23,20 +23,22 @@ public class Interpreter
 	}
 	
 	private readonly DiagnosticList _diagnostics;
+	private readonly List<Module> _availableModules;
 
 	internal Environment Environment { get; private set; }
 	
-	public Interpreter(DiagnosticList diagnostics, Environment environment)
+	public Interpreter(DiagnosticList diagnostics, Environment environment, List<Module> availableModules)
 	{
 		_diagnostics = diagnostics;
+		_availableModules = availableModules;
 		Environment = environment;
 	}
 
-	public static void Interpret(SyntaxTree syntaxTree, DiagnosticList diagnostics, Environment? environment = null)
+	public static void Interpret(SyntaxTree syntaxTree, DiagnosticList diagnostics, List<Module> availableModules, Environment? environment = null)
 	{
 		environment ??= new Environment();
 		
-		var interpreter = new Interpreter(diagnostics, environment);
+		var interpreter = new Interpreter(diagnostics, environment, availableModules);
 		try
 		{
 			foreach (var statement in syntaxTree.Root.Statements)
@@ -76,9 +78,28 @@ public class Interpreter
 			case BreakStatementSyntax s:
 				ExecuteBreakStatement(s);
 				break;
+			case RequireStatementSyntax s:
+				ExecuteRequireStatement(s);
+				break;
 		}
 	}
 
+	private void ExecuteRequireStatement(RequireStatementSyntax require)
+	{
+		Module? module = null;
+		foreach (var availableModule in _availableModules)
+			if (availableModule.Name == require.ModName.Lexeme)
+				module = availableModule;
+
+		if (module is null)
+		{
+			_diagnostics.Add(new Diagnostic(require.ModName.Span, $"Module '{require.ModName.Lexeme}' does not exist"));
+			throw new InterpretException();
+		}
+		
+		Environment.AddModule(this, module, require.Alias ?? require.ModName);
+	}
+	
 	private void ExecuteClassDeclaration(ClassDeclarationSyntax declaration)
 	{
 		var fields = new Dictionary<string, Object>();

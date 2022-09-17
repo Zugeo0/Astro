@@ -2,6 +2,7 @@
 using AstroLang.Analysis.Text;
 using AstroLang.Diagnostics;
 using AstroLang.Runtime;
+using AstroLang.Runtime.DataTypes;
 using AstroLang.Runtime.NativeModules;
 using AstroLang.Runtime.NativeModules.Console;
 using AstroLang.Runtime.NativeModules.Time;
@@ -10,13 +11,15 @@ namespace AstroLang;
 
 public class Astro
 {
-	private Runtime.Environment _environment;
-	private List<INativeModule> _nativeModules;
+	private readonly Runtime.Environment _environment;
+	private readonly List<INativeModule> _nativeModules;
+	private readonly List<Module> _exposedModules;
 
 	public Astro()
 	{
-		_environment = new Runtime.Environment();
-		_nativeModules = new List<INativeModule>
+		_environment = new ();
+		_exposedModules = new();
+		_nativeModules = new()
 		{
 			new ModTime(),
 			new ModConsole()
@@ -30,7 +33,7 @@ public class Astro
 		if (module is null)
 			return false;
 		
-		_environment.AddModule(module.Define());
+		_exposedModules.Add(module.Define());
 		return true;
 	}
 	
@@ -49,7 +52,7 @@ public class Astro
 		if (syntaxTree is null)
 			return;
 		
-		Interpreter.Interpret(syntaxTree, diagnosticList, _environment);
+		Interpreter.Interpret(syntaxTree, diagnosticList, _exposedModules, _environment);
 		
 		if (diagnosticList.AnyErrors())
 			foreach (var diagnostic in diagnosticList.Diagnostics)

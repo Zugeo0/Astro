@@ -1,4 +1,5 @@
-﻿using AstroLang.Runtime.DataTypes;
+﻿using AstroLang.Analysis.Parsing;
+using AstroLang.Runtime.DataTypes;
 using Object = AstroLang.Runtime.DataTypes.Object;
 
 namespace AstroLang.Runtime;
@@ -8,7 +9,7 @@ public class ModuleAlreadyExistsException : Exception { }
 public class Environment
 {
 	private readonly Stack<Scope> _scopes = new();
-	private readonly List<Module> _modules = new();
+	private readonly Dictionary<string, Module> _modules = new();
 
 	public Environment()
 	{
@@ -45,8 +46,8 @@ public class Environment
 
 	public DataTypes.Object? FindVariable(string name)
 	{
-		foreach (var module in _modules.Where(module => module.Name == name))
-			return module;
+		if (_modules.ContainsKey(name))
+			return _modules[name];
 
 		return _scopes
 			.Select(scope => scope.GetLocal(name))
@@ -56,13 +57,11 @@ public class Environment
 	public void BeginScope() => _scopes.Push(new Scope());
 	public void EndScope() => _scopes.Pop();
 
-	public void AddModule(Module module)
+	public void AddModule(Interpreter interpreter, Module module, Token name)
 	{
-		if (FindModule(module.Name) is not null)
-			throw new ModuleAlreadyExistsException();
-		
-		_modules.Add(module);
-	}
+		if (_modules.ContainsKey(name.Lexeme))
+			interpreter.Error(name.Span, $"Module with name '{name.Lexeme}' already exists");
 
-	public Module? FindModule(string name) => _modules.Find(m => m.Name == name);
+		_modules.Add(name.Lexeme, module);
+	}
 }

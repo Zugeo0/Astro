@@ -89,6 +89,8 @@ public class Parser
 				return ParseReturnStatement();
 			case TokenType.Break:
 				return ParseBreakStatement();
+			case TokenType.Require:
+				return ParseRequireStatement();
 			
 			case TokenType.Public:
 			case TokenType.Private:
@@ -105,6 +107,20 @@ public class Parser
 		}
 		
 		return ParseExpressionStatement();
+	}
+
+	private StatementSyntax ParseRequireStatement()
+	{
+		var keyword = Advance();
+		var name = Consume(TokenType.Identifier, "module name after 'require'");
+		Token? alias = null;
+		if (Match(TokenType.As))
+			alias = Consume(TokenType.Identifier, "alias after 'as'");
+
+		Consume(TokenType.Semicolon, "';' after require statement");
+
+		var span = keyword.Span.ExtendTo(alias is not null ? alias.Span : name.Span);
+		return new RequireStatementSyntax(span, keyword, name, alias);
 	}
 
 	private StatementSyntax ParseBreakStatement()
