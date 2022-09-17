@@ -30,6 +30,12 @@ public enum TokenType
 	Star,
 	Slash,
 	Percent,
+	Public,
+	Private,
+	Method,
+	Class,
+	New,
+	Constructor,
 	
 	// Keywords
 	True,
@@ -46,5 +52,6 @@ public enum TokenType
 	Return,
 	
 	// Special
+	Inserted,
 	EndOfFile,
 }

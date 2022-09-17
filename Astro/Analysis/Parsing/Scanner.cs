@@ -147,9 +147,15 @@ public class Scanner
 			"or"    => TokenType.Or,
 			"while" => TokenType.While,
 			"for"   => TokenType.For,
-			"function" => TokenType.Function,
-			"return"   => TokenType.Return,
-			
+			"class" => TokenType.Class,
+			"new"   => TokenType.New,
+			"function"    => TokenType.Function,
+			"return"      => TokenType.Return,
+			"public"      => TokenType.Public,
+			"private"     => TokenType.Private,
+			"method"      => TokenType.Method,
+			"constructor" => TokenType.Constructor,
+
 			_       => TokenType.Identifier
 		};
 	}

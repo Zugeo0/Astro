@@ -1,28 +1,26 @@
-﻿using AstroLang.Analysis.Parsing;
-using AstroLang.Analysis.Parsing.SyntaxNodes;
+﻿using AstroLang.Analysis.Parsing.SyntaxNodes;
 
 namespace AstroLang.Runtime.DataTypes;
 
-public class Function : Object, ICallable
+public class Method : Object, ICallable
 {
-	public FunctionType Type { get; }
 	private readonly FunctionDeclarationSyntax _function;
 	private readonly Environment _closure;
+	private readonly Instance _instance;
 
-	public Function(FunctionDeclarationSyntax function, Environment closure, FunctionType type)
+	public Method(FunctionDeclarationSyntax function, Environment closure, Instance instance)
 	{
-		Type = type;
 		_function = function;
 		_closure = closure;
+		_instance = instance;
 	}
 
 	public int Arity() => _function.Arguments.Count;
 
-	public Method Bind(Instance instance) => new(_function, _closure, instance);
-	
 	public Object Call(Interpreter interpreter, List<Object> arguments)
 	{
 		_closure.BeginScope();
+		_closure.DefineLocal("this", _instance);
 
 		for (int i = 0; i < Arity(); i++)
 			_closure.DefineLocal(_function.Arguments[i].Lexeme, arguments[i]);
@@ -43,6 +41,6 @@ public class Function : Object, ICallable
 		return returnValue;
 	}
 
-	public override string TypeString() => "function";
-	public override string ToString() => "function";
+	public override string TypeString() => "method";
+	public override string ToString() => "method";
 }

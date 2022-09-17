@@ -24,7 +24,7 @@ public class Environment
 
 	public bool LocalDeclaredInCurrentScope(string name) => _scopes.Peek().HasLocal(name);
 	
-	public void DeclareLocal(string name, Object value)
+	public void DefineLocal(string name, Object value)
 	{
 		_scopes.Peek().DeclareLocal(name, value);
 	}

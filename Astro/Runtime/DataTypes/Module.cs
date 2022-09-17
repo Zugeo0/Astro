@@ -1,4 +1,6 @@
-﻿namespace AstroLang.Runtime.DataTypes;
+﻿using AstroLang.Analysis.Parsing;
+
+namespace AstroLang.Runtime.DataTypes;
 
 public class Module : Object, IAccessible
 {
@@ -11,9 +13,9 @@ public class Module : Object, IAccessible
 		Name = name;
 	}
 
-	public Object Access(Interpreter interpreter, string name)
+	public Object Access(Interpreter interpreter, Token name)
 	{
-		return FindGlobal(name);
+		return FindGlobal(name.Lexeme);
 	}
 
 	public void AddGlobal(string name, DataTypes.Object value) => _globals.Add(name, value);

@@ -1,5 +1,6 @@
 ﻿using AstroLang.Analysis.Parsing;
 using AstroLang.Analysis.Parsing.SyntaxNodes;
+using AstroLang.Analysis.Text;
 using AstroLang.Runtime.DataTypes;
 using AstroLang.Diagnostics;
 using Object = AstroLang.Runtime.DataTypes.Object;
@@ -68,7 +69,44 @@ public class Interpreter
 			case ReturnStatementSyntax s:
 				ExecuteReturnStatement(s);
 				break;
+			case ClassDeclarationSyntax s:
+				ExecuteClassDeclaration(s);
+				break;
 		}
+	}
+
+	private void ExecuteClassDeclaration(ClassDeclarationSyntax declaration)
+	{
+		var fields = new Dictionary<string, Object>();
+		var functions = new Dictionary<string, Function>();
+		
+		Environment.BeginScope();
+
+		foreach (var property in declaration.Properties)
+		{
+			switch (property.Declaration)
+			{
+				case FunctionDeclarationSyntax function:
+					var func = new Function(function, Environment, function.Type);
+					functions.Add(function.Name.Lexeme, func);
+					
+					break;
+				case VariableDeclarationSyntax member:
+					fields.Add(member.Name.Lexeme, new Null());
+					break;
+
+				default:
+					throw new Exception("Invalid property type");
+			}
+		}
+
+		Function? constructor = null;
+		if (declaration.Constructor?.Declaration is FunctionDeclarationSyntax fn)
+			constructor = new(fn, Environment, fn.Type);
+		
+		var @class = new Class(declaration.Name.Lexeme, fields, functions, constructor);
+		Environment.EndScope();
+		Environment.DefineLocal(declaration.Name.Lexeme, @class);
 	}
 
 	private void ExecuteReturnStatement(ReturnStatementSyntax statement)
@@ -79,8 +117,8 @@ public class Interpreter
 	
 	private void ExecuteFunctionDeclaration(FunctionDeclarationSyntax declaration)
 	{
-		var function = new Function(declaration, Environment.Reference());
-		Environment.DeclareLocal(declaration.Name.Lexeme, function);
+		var function = new Function(declaration, Environment.Reference(), declaration.Type);
+		Environment.DefineLocal(declaration.Name.Lexeme, function);
 	}
 
 	private void ExecuteVariableDeclaration(VariableDeclarationSyntax declaration)
@@ -92,7 +130,7 @@ public class Interpreter
 		}
 		
 		var value = declaration.Initializer is not null ? Evaluate(declaration.Initializer) : new Null();
-		Environment.DeclareLocal(declaration.Name.Lexeme, value);
+		Environment.DefineLocal(declaration.Name.Lexeme, value);
 	}
 
 	private void ExecuteWhileStatement(WhileStatementSyntax whileStatement)
@@ -136,6 +174,10 @@ public class Interpreter
 				return EvaluateCall(e);
 			case AccessExpressionSyntax e:
 				return EvaluateAccess(e);
+			case SetExpressionSyntax e:
+				return EvaluateSet(e);
+			case NewExpressionSyntax e:
+				return EvaluateNew(e);
 		}
 
 		throw new Exception("Invalid Expression");
@@ -225,6 +267,28 @@ public class Interpreter
 		}
 	}
 
+	private DataTypes.Object EvaluateNew(NewExpressionSyntax newExpression)
+	{
+		var obj = Evaluate(newExpression.Object);
+		if (obj is IInstanceable instanceable)
+		{
+			if (newExpression.Arguments.Count != instanceable.Arity())
+			{
+				_diagnostics.Add(new Diagnostic(newExpression.Span, $"Incorrect number of arguments. Expected {instanceable.Arity()}, got {newExpression.Arguments.Count}"));
+				throw new InterpretException();
+			}
+
+			var arguments = new List<DataTypes.Object>();
+			foreach (var arg in newExpression.Arguments)
+				arguments.Add(Evaluate(arg));
+
+			return instanceable.CreateInstance(this, arguments);
+		}
+		
+		_diagnostics.Add(new Diagnostic(newExpression.Object.Span, $"Object of type '{obj.TypeString()}' is not instanceable"));
+		throw new InterpretException();
+	}
+
 	private DataTypes.Object EvaluateAccess(AccessExpressionSyntax accessExpression)
 	{
 		var obj = Evaluate(accessExpression.Object);
@@ -234,7 +298,7 @@ public class Interpreter
 			throw new InterpretException();
 		}
 
-		return a.Access(this, accessExpression.Name.Lexeme);
+		return a.Access(this, accessExpression.Name);
 	}
 
 	private DataTypes.Object EvaluateAssign(AssignExpressionSyntax assignExpression)
@@ -246,6 +310,18 @@ public class Interpreter
 			return value;
 		
 		_diagnostics.Add(new Diagnostic(assignExpression.Name.Span, $"Local variable '{name}' is not defined"));
+		throw new InterpretException();
+	}
+	
+	private DataTypes.Object EvaluateSet(SetExpressionSyntax setExpression)
+	{
+		var target = Evaluate(setExpression.Target);
+		var value = Evaluate(setExpression.Value);
+		
+		if (target is ISettable settable)
+			return settable.Set(this, setExpression.Name, value);
+		
+		_diagnostics.Add(new Diagnostic(setExpression.Target.Span, $"Invalid assignment target"));
 		throw new InterpretException();
 	}
 
@@ -286,6 +362,12 @@ public class Interpreter
 			
 			_ => throw new Exception("Invalid literal"),
 		};
+	}
+
+	internal void Error(TextSpan span, string message)
+	{
+		_diagnostics.Add(new(span, message));
+		throw new InterpretException();
 	}
 
 	private DataTypes.Object EvaluateVariable(VariableExpressionSyntax variableExpression)

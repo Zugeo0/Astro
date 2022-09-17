@@ -57,11 +57,11 @@ public class Parser
 		return ParseStatement();
 	}
 
-	private StatementSyntax ParseVariableDeclaration()
+	private StatementSyntax ParseVariableDeclaration(bool allowInitializer = true)
 	{
 		var varKeyword = Advance();
 		var name = Advance();
-		var initializer = Match(TokenType.Equals) ? ParseBinaryExpression() : null;
+		var initializer = allowInitializer && Match(TokenType.Equals) ? ParseBinaryExpression() : null;
 		var span = initializer is not null
 			? varKeyword.Span.ExtendTo(initializer.Span)
 			: varKeyword.Span.ExtendTo(name.Span);
@@ -86,6 +86,19 @@ public class Parser
 				return ParseFunctionStatement();
 			case TokenType.Return:
 				return ParseReturnStatement();
+			
+			case TokenType.Public:
+			case TokenType.Private:
+				var accessModifier = Advance();
+				
+				switch (Peek().Type)
+				{
+					case TokenType.Class:
+						return ParseClassStatement(accessModifier);
+				}
+				
+				_diagnostics.Add(new Diagnostic(TokenSpan, "'class' or 'mod' after access modifier"));
+				throw new ParseException();
 		}
 		
 		return ParseExpressionStatement();
@@ -107,11 +120,106 @@ public class Parser
 		return new ReturnStatementSyntax(keyword.Span.ExtendTo(value.Span), keyword, value);
 	}
 
-	private StatementSyntax ParseFunctionStatement()
+	private StatementSyntax ParseClassStatement(Token accessModifier)
 	{
 		var keyword = Advance();
-		var name = Consume(TokenType.Identifier, "identifier after 'function'");
+		var name = Consume(TokenType.Identifier, "identifier after 'class'");
+		var leftBrace = Consume(TokenType.LeftBrace, "'{' after class name");
+		
+		var access = accessModifier.Type switch
+		{
+			TokenType.Public => AccessModifier.Public,
+			TokenType.Private => AccessModifier.Private,
+			
+			_ => throw new ArgumentException("Invalid access modifier")
+		};
 
+		var properties = new List<PropertyDeclarationSyntax>();
+		PropertyDeclarationSyntax? constructor = null;
+		
+		while (!AtEnd() && Peek().Type != TokenType.RightBrace)
+		{
+			var property = ParseClassProperty();
+			if (property.Declaration is FunctionDeclarationSyntax fn && fn.Type == FunctionType.Constructor)
+			{
+				if (constructor is not null)
+				{
+					_diagnostics.Add(new Diagnostic(fn.Keyword.Span, "Constructor already defined"));
+					throw new ParseException();
+				}
+
+				constructor = property;
+				continue;
+			}
+
+			properties.Add(property);
+		}
+
+		Consume(TokenType.RightBrace, "'}' after class body");
+
+		return new ClassDeclarationSyntax(name.Span, access, keyword, name, properties, constructor);
+	}
+
+	private PropertyDeclarationSyntax ParseClassProperty()
+	{
+		var accessModifierToken = Peek();
+		var accessModifier = AccessModifier.Private;
+		switch (accessModifierToken.Type)
+		{
+			case TokenType.Public:
+				accessModifier = AccessModifier.Public;
+				break;
+			case TokenType.Private:
+				accessModifier = AccessModifier.Private;
+				break;
+			
+			default:
+				_diagnostics.Add(new Diagnostic(accessModifierToken.Span, "Expected 'public' or 'private'"));
+				throw new ParseException();
+		}
+
+		Advance();
+
+		if (Peek().Type == TokenType.Var)
+		{
+			var declaration = ParseVariableDeclaration(false);
+			var span = accessModifierToken.Span.ExtendTo(declaration.Span);
+			return new PropertyDeclarationSyntax(span, accessModifier, declaration);
+		}
+
+		if (Peek().Type == TokenType.Method)
+		{
+			var func = ParseFunctionStatement(FunctionType.Method);
+			var span = accessModifierToken.Span.ExtendTo(func.Span);
+			return new PropertyDeclarationSyntax(span, accessModifier, func);
+		}
+		
+		if (Peek().Type == TokenType.Function)
+		{
+			var func = ParseFunctionStatement(FunctionType.Function);
+			var span = accessModifierToken.Span.ExtendTo(func.Span);
+			return new PropertyDeclarationSyntax(span, accessModifier, func);
+		}
+
+		if (Peek().Type == TokenType.Constructor)
+		{
+			var func = ParseFunctionStatement(FunctionType.Constructor);
+			var span = accessModifierToken.Span.ExtendTo(func.Span);
+			return new PropertyDeclarationSyntax(span, accessModifier, func);
+		}
+
+		var errorSpan = new TextSpan(accessModifierToken.Span.Start + accessModifierToken.Span.Length, 1);
+		_diagnostics.Add(new Diagnostic(errorSpan, "Expected 'function', 'method' or 'var'"));
+		throw new ParseException();
+	}
+
+	private FunctionDeclarationSyntax ParseFunctionStatement(FunctionType type = FunctionType.Function)
+	{
+		var keyword = Advance();
+		var name = type != FunctionType.Constructor
+			? Consume(TokenType.Identifier, "identifier after 'function'")
+			: new(TokenType.Inserted, TokenSpan, "");
+		
 		var leftParent = Consume(TokenType.LeftParen, "'(' after function name");
 
 		var arguments = new List<Token>();
@@ -137,7 +245,7 @@ public class Parser
 		var body = ParseBlockStatement();
 		_inFunction = wasInFunction;
 		
-		return new FunctionDeclarationSyntax(keyword.Span.ExtendTo(body.Span), keyword, name, arguments, body);
+		return new(keyword.Span.ExtendTo(body.Span), type, keyword, name, arguments, body);
 	}
 
 	private StatementSyntax ParseForStatement()
@@ -224,6 +332,9 @@ public class Parser
 			var value = ParseAssignmentExpression();
 			if (expr is VariableExpressionSyntax v)
 				return new AssignExpressionSyntax(v.Name, value);
+
+			if (expr is AccessExpressionSyntax a)
+				return new SetExpressionSyntax(a.Object, a.Name, value);
 			
 			_diagnostics.Add(new Diagnostic(expr.Span, $"Invalid assignment target"));
 			throw new ParseException();
@@ -307,19 +418,53 @@ public class Parser
 		var span = TokenSpan;
 		var token = Peek();
 
+		if (token.Type == TokenType.New)
+			return ParseNewExpression();
+
 		if (Match(TokenType.LeftParen))
 		{
 			var expr = ParseBinaryExpression();
 			Consume(TokenType.RightParen, "')' after grouping");
 			return expr;
 		}
+
+		return ParseLiteral();
+	}
+
+	private ExpressionSyntax ParseNewExpression()
+	{
+		var newKeyword = Advance();
+		var expr = ParseLiteral();
+		var leftParen = Consume(TokenType.LeftParen, "'(' after class name");
 		
+		var arguments = new List<ExpressionSyntax>();
+		if (Peek().Type != TokenType.RightParen)
+		{
+			do
+			{
+				if (arguments.Count == 255)
+				{
+					_diagnostics.Add(new Diagnostic(TokenSpan, $"Too many arguments in constructor"));
+					throw new ParseException();
+				}
+
+				arguments.Add(ParseBinaryExpression());
+			} while (Match(TokenType.Comma));
+		}
+
+		var rightParen = Consume(TokenType.RightParen, "')' after arguments");
+		return new NewExpressionSyntax(expr.Span.ExtendTo(rightParen.Span), newKeyword, expr, arguments, leftParen, rightParen);
+	}
+
+	private ExpressionSyntax ParseLiteral()
+	{
+		var token = Peek();
 		if (Match(TokenType.Number, TokenType.String, TokenType.True, TokenType.False, TokenType.Null))
-			return new LiteralExpressionSyntax(token, span);
+			return new LiteralExpressionSyntax(token, token.Span);
 
 		if (Match(TokenType.Identifier))
 			return new VariableExpressionSyntax(token);
-		
+
 		_diagnostics.Add(new Diagnostic(TokenSpan, $"Expected a literal"));
 		throw new ParseException();
 	}
@@ -372,7 +517,7 @@ public class Parser
 		_diagnostics.Add(new Diagnostic(span, $"Expected {expect}"));
 		throw new ParseException();
 	}
-	
+
 	private bool Match(params TokenType[] types) => types.Any(Match);
 	private bool Match(TokenType type)
 	{
