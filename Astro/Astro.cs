@@ -5,6 +5,7 @@ using AstroLang.Runtime;
 using AstroLang.Runtime.DataTypes;
 using AstroLang.Runtime.NativeModules;
 using AstroLang.Runtime.NativeModules.Console;
+using AstroLang.Runtime.NativeModules.FileSystem;
 using AstroLang.Runtime.NativeModules.Time;
 
 namespace AstroLang;
@@ -22,7 +23,8 @@ public class Astro
 		_nativeModules = new()
 		{
 			new ModTime(),
-			new ModConsole()
+			new ModConsole(),
+			new ModFileSystem()
 		};
 	}
 

@@ -27,6 +27,7 @@ void LaunchREPL()
 	var astro = new Astro();
 	astro.ExposeModule("Console");
 	astro.ExposeModule("Time");
+	astro.ExposeModule("FileSystem");
 	
 	while (true)
 	{
@@ -55,6 +56,7 @@ void RunFile(string path)
 	var astro = new Astro();
 	astro.ExposeModule("Console");
 	astro.ExposeModule("Time");
+	astro.ExposeModule("FileSystem");
 
 	astro.Run(file);
 }
