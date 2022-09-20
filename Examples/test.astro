@@ -5,7 +5,6 @@ private mod Program
 {
     private function Main()
     {
-        var currentDir = FS.CurrentDirectory();
-        Console.Out(currentDir, "\n");
+        Console.Out(FS.ReadFileToString("Examples/read_test.txt"), "\n");
     }
 }
