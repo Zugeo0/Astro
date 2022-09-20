@@ -8,6 +8,6 @@ public class FnCurrentDirectory : ICallable
 
     public Object Call(Interpreter interpreter, List<Object> arguments)
     {
-        return new DataTypes.String("HAHA, Made you look!\n");
+        return new DataTypes.String(System.Environment.CurrentDirectory);
     }
 }
