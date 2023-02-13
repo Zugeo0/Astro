@@ -6,43 +6,43 @@ namespace AstroLang.Runtime.DataTypes;
 public class Function : Object, ICallable
 {
 	public FunctionType Type { get; }
-	public AccessModifier AccessModifier { get; }
 	public List<DeclarationFlag> Flags { get; }
-	private readonly FunctionDeclarationSyntax _function;
-	private readonly Environment _closure;
+	public readonly FunctionDeclarationSyntax Declaration;
+	public readonly Environment Closure;
 
-	public Function(FunctionDeclarationSyntax function, Environment closure, FunctionType type, AccessModifier accessModifier, List<DeclarationFlag> flags)
+	public Object? Owner { get; set; }
+
+	public Function(FunctionDeclarationSyntax function, Environment closure, FunctionType type, List<DeclarationFlag> flags)
 	{
 		Type = type;
-		AccessModifier = accessModifier;
 		Flags = flags;
-		_function = function;
-		_closure = closure;
+		Declaration = function;
+		Closure = closure;
 	}
 
-	public int Arity() => _function.Arguments.Count;
+	public int Arity() => Declaration.Arguments.Count;
 
-	public Method Bind(Instance instance) => new(_function, _closure, instance);
+	public Method Bind(Instance instance) => new(Declaration, Closure, instance);
 	
 	public Object Call(Interpreter interpreter, List<Object> arguments)
 	{
-		_closure.BeginScope();
+		Closure.BeginScope();
 
 		for (int i = 0; i < Arity(); i++)
-			_closure.DefineLocal(_function.Arguments[i].Lexeme, arguments[i]);
+			Closure.DefineLocal(Declaration.Arguments[i].Lexeme, arguments[i]);
 
 		Object returnValue = new Null();
 		
 		try
 		{
-			interpreter.Execute(_function.Body, _closure);
+			interpreter.ExecuteFunction(this);
 		}
 		catch (Interpreter.ReturnException e)
 		{
 			returnValue = e.Value;
 		}
 		
-		_closure.EndScope();
+		Closure.EndScope();
 
 		return returnValue;
 	}

@@ -7,7 +7,7 @@ public class ModConsole : INativeModule
 {
 	public Module Define()
 	{
-		var module = new Module(Name(), AccessModifier.Public);
+		var module = new Module(Name());
 
 		module.AddProperty("Out", NativeFunction.From<FnOut>(), AccessModifier.Public);
 		

@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "AstroCLI": {
+      "commandName": "Project",
+      "commandLineArgs": "Examples/test.astro",
+      "workingDirectory": "C:\\Dev\\Astro"
+    },
+    "AstroCLI REPL": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\Dev\\Astro"
+    }
+  }
+}

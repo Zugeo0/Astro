@@ -7,7 +7,7 @@ public class ModTime : INativeModule
 {
 	public Module Define()
 	{
-		var module = new Module(Name(), AccessModifier.Public);
+		var module = new Module(Name());
 
 		module.AddProperty("Current", NativeFunction.From<FnCurrent>(), AccessModifier.Public);
 		

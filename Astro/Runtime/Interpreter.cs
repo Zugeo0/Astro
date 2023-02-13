@@ -25,6 +25,8 @@ public class Interpreter
 	private readonly DiagnosticList _diagnostics;
 	private readonly List<Module> _availableModules;
 
+	private Object? _executingFunction;
+
 	internal Environment Environment { get; private set; }
 	
 	public Interpreter(DiagnosticList diagnostics, Environment environment, List<Module> availableModules)
@@ -107,6 +109,14 @@ public class Interpreter
 			Environment = prevEnvironment;
 	}
 
+	internal void ExecuteFunction(StatementSyntax body, Environment closure, Object? function)
+	{
+		var prevFunc = _executingFunction;
+		_executingFunction = function;
+		Execute(body, closure);
+		_executingFunction = prevFunc;
+	}
+
 	private void ExecuteModDeclaration(ModDeclarationSyntax mod)
 	{
 		Environment.BeginModule(this, mod.Name, mod.AccessModifier);
@@ -135,8 +145,8 @@ public class Interpreter
 	
 	private void ExecuteClassDeclaration(ClassDeclarationSyntax declaration)
 	{
-		var fields = new Dictionary<string, Object>();
-		var functions = new Dictionary<string, Function>();
+		var fields = new Dictionary<string, Restricted<Object>>();
+		var functions = new Dictionary<string, Restricted<Function>>();
 		
 		Environment.BeginScope();
 
@@ -145,12 +155,12 @@ public class Interpreter
 			switch (property.Declaration)
 			{
 				case FunctionDeclarationSyntax function:
-					var func = new Function(function, Environment, function.Type, function.Accessability, function.Flags);
-					functions.Add(function.Name.Lexeme, func);
+					var func = new Function(function, Environment, function.Type, function.Flags);
+					functions.Add(function.Name.Lexeme, new(property.Access, func));
 					
 					break;
 				case VariableDeclarationSyntax member:
-					fields.Add(member.Name.Lexeme, new Null());
+					fields.Add(member.Name.Lexeme, new(property.Access, new Null()));
 					break;
 
 				default:
@@ -158,11 +168,11 @@ public class Interpreter
 			}
 		}
 
-		Function? constructor = null;
+		Restricted<Function>? constructor = null;
 		if (declaration.Constructor?.Declaration is FunctionDeclarationSyntax fn)
-			constructor = new(fn, Environment, fn.Type, fn.Accessability, fn.Flags);
+			constructor = new(declaration.Constructor.Access, new(fn, Environment, fn.Type, fn.Flags));
 		
-		var @class = new Class(declaration.Name.Lexeme, fields, functions, constructor);
+		var @class = new Class(declaration.Name.Lexeme, Environment.CurrentModule, fields, functions, constructor);
 		Environment.EndScope();
 		Environment.DefineProperty(declaration.Name.Lexeme, @class, declaration.Accessability);
 	}
@@ -175,7 +185,7 @@ public class Interpreter
 	
 	private void ExecuteFunctionDeclaration(FunctionDeclarationSyntax declaration)
 	{
-		var function = new Function(declaration, Environment.ReferenceSnapshot(), declaration.Type, declaration.Accessability, declaration.Flags);
+		var function = new Function(declaration, Environment.ReferenceSnapshot(), declaration.Type, declaration.Flags);
 		Environment.DefineProperty(declaration.Name.Lexeme, function, declaration.Accessability);
 	}
 
@@ -370,7 +380,7 @@ public class Interpreter
 			throw new InterpretException();
 		}
 
-		return a.Access(this, accessExpression.Name);
+		return a.Access(_executingFunction, this, accessExpression.Name);
 	}
 
 	private DataTypes.Object EvaluateAssign(AssignExpressionSyntax assignExpression)
@@ -444,7 +454,7 @@ public class Interpreter
 
 	private DataTypes.Object EvaluateVariable(VariableExpressionSyntax variableExpression)
 	{
-		var variable = Environment.FindVariable(variableExpression.Name.Lexeme);
+		var variable = Environment.FindVariable(this, variableExpression.Name);
 		if (variable is not null)
 			return variable;
 		

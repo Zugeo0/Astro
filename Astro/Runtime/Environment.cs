@@ -11,15 +11,17 @@ public class Environment
 	private readonly Stack<Scope> _scopes = new();
 	private readonly Dictionary<string, Module> _modules = new();
 
-	private readonly List<Module> _userModules = new();
-	private readonly Stack<Module> _moduleScope = new();
+	private readonly List<Restricted<Module>> _userModules = new();
+	private readonly Stack<Restricted<Module>> _moduleScope = new();
+
+	public Module CurrentModule => _moduleScope.Peek().Value;
 
 	public Environment()
 	{
 		BeginScope();
 	}
 
-	private Environment(Stack<Scope> scopes, Stack<Module> moduleScope, List<Module> userModules, Dictionary<string, Module> modules)
+	private Environment(Stack<Scope> scopes, Stack<Restricted<Module>> moduleScope, List<Restricted<Module>> userModules, Dictionary<string, Module> modules)
 	{
 		_scopes = new(scopes);
 		_moduleScope = new(moduleScope);
@@ -38,7 +40,7 @@ public class Environment
 
 	internal void DefineProperty(string name, Object value, AccessModifier accessability)
 	{
-		_moduleScope.Peek().AddProperty(name, value, accessability);
+		_moduleScope.Peek().Value.AddProperty(name, value, accessability);
 	}
 
 	internal bool AssignLocal(string name, Object value)
@@ -55,28 +57,40 @@ public class Environment
 		return false;
 	}
 
-	internal DataTypes.Object? FindVariable(string name)
+	internal DataTypes.Object FindVariable(Interpreter interpreter, Token name)
 	{
-		foreach (var mod in _moduleScope.Reverse())
+		var variable = _scopes
+            .Select(scope => scope.GetLocal(name.Lexeme))
+            .FirstOrDefault(local => local is not null);
+
+		if (variable is not null)
+			return variable;
+
+        foreach (var mod in _moduleScope.Reverse())
 		{
-			var property = mod.FindProperty(name);
-			if (property is not null)
-				return property;
+			var property = mod.Value.FindProperty(name.Lexeme);
+			if (property is null)
+				continue;
+
+            return property.Value;	
 		}
 
-		if (_modules.ContainsKey(name))
-			return _modules[name];
+        foreach (var mod in _userModules)
+		{
+			if (mod.Value.Name != name.Lexeme)
+				continue;
 
-		foreach (var mod in _userModules)
-			if (mod.Name == name)
-				return mod;
+			return mod.Value;
+		}
+
+        if (_modules.ContainsKey(name.Lexeme))
+			return _modules[name.Lexeme];
 		
-		return _scopes
-			.Select(scope => scope.GetLocal(name))
-			.FirstOrDefault(local => local is not null);
-	}
+        interpreter.Error(name.Span, $"Cannot access private property '{name.Lexeme}' outside of own module");
+		return new Null();
+    }
 
-	internal void BeginScope() => _scopes.Push(new Scope());
+    internal void BeginScope() => _scopes.Push(new Scope());
 	internal void EndScope() => _scopes.Pop();
 
 	internal void BeginModule(Interpreter interpreter, Token name, AccessModifier accessability)
@@ -84,8 +98,8 @@ public class Environment
 		if (_modules.ContainsKey(name.Lexeme))
 			interpreter.Error(name.Span, $"External module '{name.Lexeme}' is already defined");
 		
-		var foundModule = _userModules.Find(mod => mod.Name == name.Lexeme);
-		_moduleScope.Push(foundModule ?? new Module(name.Lexeme, accessability));
+		var foundModule = _userModules.Find(mod => mod.Value.Name == name.Lexeme);
+		_moduleScope.Push(foundModule ?? new(accessability, new Module(name.Lexeme)));
 		BeginScope();
 	}
 
@@ -109,7 +123,7 @@ public class Environment
 	{
 		foreach (var module in _userModules)
 		{
-			var entry = module.FindEntry();
+			var entry = module.Value.FindEntry();
 			if (entry is not null)
 				return entry;
 		}
@@ -117,5 +131,5 @@ public class Environment
 		return null;
 	}
 
-	public Module? FindModule(string name) => _userModules.Find(mod => mod.Name == name);
+	public Module? FindModule(string name) => _userModules.Find(mod => mod.Value.Name == name)?.Value;
 }

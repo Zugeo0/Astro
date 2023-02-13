@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Astro": {
+      "commandName": "Project",
+      "commandLineArgs": "Examples/test.astro",
+      "workingDirectory": "C:\\Dev\\Astro"
+    }
+  }
+}

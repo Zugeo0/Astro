@@ -5,18 +5,27 @@ namespace AstroLang.Runtime.DataTypes;
 public class Instance : Object, IAccessible, ISettable
 {
 	public Class Class { get; }
-	public Dictionary<string, Object> Fields { get; }
+	public Dictionary<string, Restricted<Object>> Fields { get; }
 
-	public Instance(Class @class, Dictionary<string, Object> fields)
+	public Instance(Class @class, Dictionary<string, Restricted<Object>> fields)
 	{
 		Class = @class;
 		Fields = fields;
+
+		foreach (var field in fields)
+			if (field.Value.Unlock(null) is Function f)
+				f.Owner = this;
 	}
 
-	public Object Access(Interpreter interpreter, Token name)
+	public Object Access(Object? accessor, Interpreter interpreter, Token name)
 	{
 		if (Fields.ContainsKey(name.Lexeme))
-			return Fields[name.Lexeme];
+		{
+			if (!(accessor?.Equals(this) ?? false))
+                interpreter.Error(name.Span, $"Property '{name.Lexeme}' is inaccessible");
+
+            return Fields[name.Lexeme].Unlock(accessor);
+		}
 
 		var function = Class.GetFunction(name.Lexeme);
 		if (function is not null)
@@ -33,12 +42,9 @@ public class Instance : Object, IAccessible, ISettable
 	public Object Set(Interpreter interpreter, Token name, Object value)
 	{
 		if (!Fields.ContainsKey(name.Lexeme))
-		{
 			interpreter.Error(name.Span, $"Member '{name.Lexeme}' is not defined");
-			return value;
-		}
 		
-		Fields[name.Lexeme] = value;
+		Fields[name.Lexeme].Value = value;
 		return value;
 	}
 

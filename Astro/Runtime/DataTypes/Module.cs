@@ -4,33 +4,39 @@ namespace AstroLang.Runtime.DataTypes;
 
 public class Module : Object, IAccessible
 {
-	private record ModuleGlobal(Object Global, AccessModifier Accessability);
-	
 	public string Name { get; }
-	public AccessModifier Accessability { get; }
 
-	private Dictionary<string, ModuleGlobal> _globals = new();
+	private Dictionary<string, Restricted<Object>> _properties = new();
 
-	public Module(string name, AccessModifier accessability)
+	public Module(string name)
 	{
 		Name = name;
-		Accessability = accessability;
 	}
 
-	public Object Access(Interpreter interpreter, Token name)
+	public Object Access(Object? accessor, Interpreter interpreter, Token name)
 	{
-		return FindProperty(name.Lexeme) ?? new Null();
-	}
+        var prop = FindProperty(name.Lexeme);
+		if (prop is not null)
+		{
+			if (prop.Accessability == AccessModifier.Private && !(accessor?.Equals(this) ?? false))
+                interpreter.Error(name.Span, $"Cannot access private property '{name.Lexeme}' outside of own module");
 
-	public void AddProperty(string name, Object value, AccessModifier access) => _globals.Add(name, new(value, access));
-	public void RemoveProperty(string name) => _globals.Remove(name);
+			return prop.Unlock(accessor);
+        }
 
-	public Object? FindProperty(string name) => _globals.ContainsKey(name) ? _globals[name].Global : null;
+        interpreter.Error(name.Span, $"No property named '{name.Lexeme}' defined in module {ToString()}");
+		return new Null();
+    }
+
+	public void AddProperty(string name, Object value, AccessModifier access) => _properties.Add(name, new(access, value));
+	public void RemoveProperty(string name) => _properties.Remove(name);
+
+	public Restricted<Object>? FindProperty(string name) => _properties.ContainsKey(name) ? _properties[name] : null;
 
 	public Function? FindEntry()
 	{
-		foreach (var values in _globals.Values)
-			if (values.Global is Function f && f.Flags.Exists(flag => flag == DeclarationFlag.MainFunction))
+		foreach (var values in _properties.Values)
+			if (values.Unlock(null) is Function f && f.Flags.Exists(flag => flag == DeclarationFlag.MainFunction))
 				return f;
 		
 		return null;

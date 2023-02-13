@@ -3,8 +3,30 @@ require Console;
 
 private mod Program
 {
+    private class MyClass
+    {
+        private var test;
+
+        public constructor(test)
+        {
+            this.test = test;
+        }
+
+        public method Print()
+        {
+            Console.Out(this.test, "\n");
+        }
+
+        public function Test()
+        {
+            Console.Out("Hello!\n");
+        }
+    }
+
     private function Main()
     {
-        Console.Out(FS.ReadFileToString("Examples/read_test.txt"), "\n");
+        var myClass = new MyClass(15);
+
+        myClass.Print();
     }
 }

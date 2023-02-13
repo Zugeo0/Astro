@@ -8,6 +8,8 @@ public class Method : Object, ICallable
 	private readonly Environment _closure;
 	private readonly Instance _instance;
 
+	public Object? Owner { get; }
+
 	public Method(FunctionDeclarationSyntax function, Environment closure, Instance instance)
 	{
 		_function = function;
@@ -29,7 +31,7 @@ public class Method : Object, ICallable
 		
 		try
 		{
-			interpreter.Execute(_function.Body, _closure);
+			interpreter.ExecuteFunction(_function.Body, _closure);
 		}
 		catch (Interpreter.ReturnException e)
 		{
